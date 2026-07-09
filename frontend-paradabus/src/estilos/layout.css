@@ -1,14 +1,23 @@
+/* =========================================================
+   LAYOUT GENERAL DE LA APP
+   Sidebar, contenido principal y barra inferior móvil
+   ========================================================= */
+
 .app {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 240px minmax(0, 1fr);
 }
+
+/* =========================
+   PANEL LATERAL
+   ========================= */
 
 .panel-lateral {
   position: sticky;
   top: 0;
   height: 100vh;
-  padding: 26px 20px;
+  padding: 24px 18px;
   background: #ffffff;
   border-right: 1px solid var(--color-borde);
 }
@@ -17,30 +26,38 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 34px;
+  margin-bottom: 30px;
 }
 
 .marca-app__icono {
-  width: 46px;
-  height: 46px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
   color: #ffffff;
-  background: linear-gradient(135deg, var(--color-principal), var(--color-principal-oscuro));
-  border-radius: 16px;
+  background: linear-gradient(
+    135deg,
+    var(--color-principal),
+    var(--color-principal-oscuro)
+  );
+  border-radius: 15px;
 }
 
 .marca-app__titulo {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 800;
+  font-size: 1rem;
+  font-weight: 850;
 }
 
 .marca-app__subtitulo {
   margin: 2px 0 0;
   color: var(--color-texto-suave);
-  font-size: 0.86rem;
+  font-size: 0.82rem;
 }
+
+/* =========================
+   MENÚ LATERAL
+   ========================= */
 
 .menu-lateral {
   display: grid;
@@ -48,56 +65,43 @@
 }
 
 .menu-lateral__item {
-  min-height: 48px;
-  padding: 0 14px;
+  min-height: 46px;
+  padding: 0 13px;
   display: flex;
   align-items: center;
   gap: 12px;
   color: var(--color-texto-suave);
-  border-radius: 16px;
-  font-weight: 650;
+  border-radius: 15px;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.menu-lateral__item:hover {
+  color: var(--color-principal);
+  background: #f8fafc;
 }
 
 .menu-lateral__item--activo {
   color: var(--color-principal);
   background: var(--color-principal-suave);
-  font-weight: 800;
+  font-weight: 850;
 }
+
+/* =========================
+   CONTENIDO PRINCIPAL
+   ========================= */
 
 .contenido-principal {
   min-width: 0;
-  padding: 30px;
+  padding: 24px;
 }
 
-.pagina-inicio {
-  min-height: calc(100vh - 60px);
-  padding: 28px;
-  background: var(--color-panel);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-grande);
-  box-shadow: var(--sombra-panel);
-}
+/* =========================
+   BARRA INFERIOR MÓVIL
+   ========================= */
 
-.pagina-inicio__mini {
-  margin: 0 0 8px;
-  color: var(--color-principal);
-  font-size: 0.85rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.pagina-inicio h1 {
-  margin: 0;
-  font-size: clamp(2rem, 5vw, 4rem);
-  letter-spacing: -0.06em;
-}
-
-.pagina-inicio p {
-  max-width: 620px;
-  color: var(--color-texto-suave);
-  font-size: 1.05rem;
-  line-height: 1.55;
+.barra-inferior {
+  display: none;
 }
 
 @media (max-width: 900px) {
@@ -110,29 +114,18 @@
   }
 
   .contenido-principal {
-    padding: 18px;
+    padding: 16px;
+    padding-bottom: 104px;
   }
 
-  .pagina-inicio {
-    min-height: calc(100vh - 36px);
-    padding: 22px;
-    border-radius: 24px;
-  }
-}
-
-.barra-inferior {
-  display: none;
-}
-
-@media (max-width: 900px) {
   .barra-inferior {
     position: fixed;
     left: 14px;
     right: 14px;
     bottom: 12px;
-    z-index: 50;
+    z-index: 1000;
 
-    min-height: 72px;
+    min-height: 70px;
     padding: 8px;
 
     display: grid;
@@ -155,16 +148,31 @@
     color: var(--color-texto-suave);
     border-radius: 18px;
 
-    font-size: 0.72rem;
-    font-weight: 800;
+    font-size: 0.7rem;
+    font-weight: 850;
   }
 
   .barra-inferior__item--activo {
     color: var(--color-principal);
     background: var(--color-principal-suave);
   }
+}
 
+@media (max-width: 520px) {
   .contenido-principal {
-    padding-bottom: 104px;
+    padding: 12px;
+    padding-bottom: 100px;
+  }
+
+  .barra-inferior {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    min-height: 66px;
+    border-radius: 22px;
+  }
+
+  .barra-inferior__item {
+    font-size: 0.66rem;
   }
 }

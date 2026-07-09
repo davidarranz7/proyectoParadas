@@ -1,0 +1,238 @@
+/* =========================================================
+   RESPONSIVE RUTAS
+   Adaptación para tablet y móvil
+   ========================================================= */
+
+@media (max-width: 1320px) {
+  .inicio-layout {
+    grid-template-columns: minmax(320px, 470px) minmax(380px, 1fr);
+    gap: 18px;
+  }
+
+  .inicio-cabecera h1 {
+    font-size: clamp(2.05rem, 4vw, 2.85rem);
+  }
+
+  .panel-ruta-demo {
+    padding: 18px;
+  }
+
+  .mapa-ruta {
+    min-height: 320px;
+  }
+
+  .mapa-ruta__leaflet {
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .inicio-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .buscador-ruta,
+  .resultados-rutas,
+  .resultado-busqueda-demo {
+    max-width: none;
+  }
+
+  .panel-ruta-demo {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .inicio-layout {
+    gap: 16px;
+  }
+
+  .inicio-cabecera {
+    margin-bottom: 18px;
+  }
+
+  .inicio-cabecera h1 {
+    font-size: 2.15rem;
+  }
+
+  .inicio-cabecera p {
+    margin-top: 10px;
+    font-size: 0.88rem;
+  }
+
+  .panel-ruta-demo__cabecera h2 {
+    font-size: 1.15rem;
+  }
+
+  .panel-ruta-demo__icono {
+    width: 38px;
+    height: 38px;
+  }
+
+  .resultado-busqueda-demo__superior h2 {
+    font-size: 1.12rem;
+  }
+
+  .resultado-busqueda-demo__detalle {
+    padding: 11px;
+  }
+
+  .linea-bus-demo {
+    min-width: 38px;
+    height: 38px;
+    border-radius: 13px;
+  }
+
+  .mapa-ruta {
+    min-height: 360px;
+  }
+
+  .mapa-ruta__leaflet {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 560px) {
+  .inicio-cabecera {
+    margin-bottom: 18px;
+  }
+
+  .inicio-cabecera h1 {
+    font-size: 1.9rem;
+    letter-spacing: -0.06em;
+  }
+
+  .buscador-ruta {
+    max-width: none;
+  }
+
+  .selector-lugar__caja {
+    min-height: 50px;
+    border-radius: 15px;
+  }
+
+  .boton-buscar {
+    min-height: 50px;
+    border-radius: 15px;
+  }
+
+  .campo-ruta {
+    grid-template-columns: 40px 1fr;
+    padding: 13px;
+    border-radius: 16px;
+  }
+
+  .campo-ruta__icono {
+    width: 40px;
+    height: 40px;
+  }
+
+  .boton-ubicacion {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .resultado-busqueda-demo {
+    padding: 13px;
+    border-radius: 17px;
+  }
+
+  .resultado-busqueda-demo__detalle {
+    grid-template-columns: 1fr;
+  }
+
+  .resultado-busqueda-demo__detalle svg {
+    transform: rotate(90deg);
+    justify-self: center;
+  }
+
+  .resultado-busqueda-demo__linea {
+    align-items: flex-start;
+  }
+
+  .panel-ruta-demo {
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .tarjeta-ruta-demo,
+  .detalle-ruta-seleccionada {
+    border-radius: 17px;
+  }
+
+  .ruta-tiempo-demo {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .ruta-tiempo-demo > svg {
+    display: none;
+  }
+
+  .paso-ruta {
+    grid-template-columns: 32px 1fr;
+    gap: 10px;
+  }
+
+  .paso-ruta__icono {
+    width: 32px;
+    height: 32px;
+  }
+
+  .paso-ruta:not(:last-child)::after {
+    left: 15px;
+    top: 32px;
+  }
+
+  .mapa-ruta {
+    min-height: 330px;
+    border-radius: 18px;
+  }
+
+  .mapa-ruta__leaflet {
+    min-height: 330px;
+  }
+
+  .mapa-ruta__estado {
+    max-width: calc(100% - 20px);
+    padding: 7px 11px;
+    font-size: 0.7rem;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .indicador-infobus {
+    width: 28px;
+    height: 28px;
+    font-size: 0.76rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .inicio-cabecera h1 {
+    font-size: 1.72rem;
+  }
+
+  .pagina-inicio__mini {
+    font-size: 0.66rem;
+  }
+
+  .resultado-busqueda-demo__superior {
+    gap: 10px;
+  }
+
+  .resultado-busqueda-demo__tiempo {
+    min-width: 50px;
+    height: 30px;
+    font-size: 0.78rem;
+  }
+
+  .mapa-ruta {
+    min-height: 310px;
+  }
+
+  .mapa-ruta__leaflet {
+    min-height: 310px;
+  }
+}

@@ -1,0 +1,193 @@
+/* =========================================================
+   PANEL RUTA SELECCIONADA
+   Columna derecha con resumen, detalle del viaje y mapa
+   ========================================================= */
+
+.panel-ruta-demo {
+  min-height: calc(100vh - 60px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #ffffff;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra-panel);
+}
+
+.panel-ruta-demo__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.panel-ruta-demo__cabecera h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.04em;
+}
+
+.panel-ruta-demo__icono {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--color-principal);
+  background: var(--color-principal-suave);
+  border-radius: 15px;
+  flex: 0 0 auto;
+}
+
+.panel-ruta-vacio {
+  min-height: 100%;
+  padding: 24px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  background: #f8fafc;
+  border: 1px dashed var(--color-borde);
+  border-radius: 22px;
+}
+
+.panel-ruta-vacio h2 {
+  margin: 10px 0 8px;
+  font-size: 1.5rem;
+  letter-spacing: -0.04em;
+}
+
+.panel-ruta-vacio p:last-child {
+  max-width: 420px;
+  margin: 0;
+  color: var(--color-texto-suave);
+  line-height: 1.5;
+}
+
+.tarjeta-ruta-demo {
+  padding: 15px;
+  background: #f8fafc;
+  border: 1px solid var(--color-borde);
+  border-radius: 19px;
+}
+
+.tarjeta-ruta-demo__linea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tarjeta-ruta-demo strong {
+  display: block;
+  font-size: 0.96rem;
+}
+
+.tarjeta-ruta-demo p {
+  margin: 4px 0 0;
+  color: var(--color-texto-suave);
+  font-size: 0.86rem;
+}
+
+.tarjeta-ruta-demo__titulo-linea {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ruta-tiempo-demo {
+  margin-top: 14px;
+  padding-top: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--color-borde);
+}
+
+.ruta-tiempo-demo div {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-texto-suave);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.detalle-ruta-seleccionada {
+  padding: 15px;
+  background: #f8fafc;
+  border: 1px solid var(--color-borde);
+  border-radius: 19px;
+}
+
+.detalle-ruta-seleccionada h3 {
+  margin: 0 0 14px;
+  font-size: 0.98rem;
+  letter-spacing: -0.02em;
+}
+
+.paso-ruta {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 11px;
+  padding-bottom: 14px;
+}
+
+.paso-ruta:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  top: 34px;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-borde);
+}
+
+.paso-ruta:last-child {
+  padding-bottom: 0;
+}
+
+.paso-ruta__icono {
+  position: relative;
+  z-index: 1;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--color-principal);
+  background: var(--color-principal-suave);
+  border-radius: 13px;
+}
+
+.paso-ruta__icono--bus {
+  color: #ffffff;
+  background: var(--color-principal);
+}
+
+.paso-ruta span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--color-texto-suave);
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.paso-ruta strong {
+  display: block;
+  font-size: 0.88rem;
+}
+
+.paso-ruta p {
+  margin: 4px 0 0;
+  color: var(--color-texto-suave);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.paso-ruta__linea-infobus {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}

@@ -1,0 +1,114 @@
+/* =========================================================
+   INFOBUS
+   Número de minutos, colores y lista de próximos buses
+   ========================================================= */
+
+.indicador-infobus {
+  width: 31px;
+  height: 31px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #ffffff;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 950;
+  line-height: 1;
+  animation: parpadeo-infobus 1.15s ease-in-out infinite;
+}
+
+.indicador-infobus--verde {
+  background: #16a34a;
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.55);
+}
+
+.indicador-infobus--naranja {
+  background: #f97316;
+  box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.55);
+}
+
+.indicador-infobus--rojo {
+  background: #dc2626;
+  box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6);
+}
+
+@keyframes parpadeo-infobus {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.08);
+    opacity: 0.72;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.boton-infobus {
+  margin-top: 8px;
+  width: 100%;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #ffffff;
+  background: var(--color-principal);
+  border: 0;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.boton-infobus:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.popup-infobus-lista {
+  margin-top: 8px;
+  display: grid;
+  gap: 7px;
+}
+
+.popup-infobus-item {
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 8px;
+  align-items: center;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.popup-infobus-item__linea {
+  min-width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: var(--color-principal);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.popup-infobus-item strong {
+  display: block;
+  font-size: 0.76rem;
+}
+
+.popup-infobus-item small {
+  margin-top: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #6b7280;
+  font-size: 0.7rem;
+  font-weight: 750;
+}

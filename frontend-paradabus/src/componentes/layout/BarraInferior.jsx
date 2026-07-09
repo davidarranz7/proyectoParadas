@@ -1,27 +1,56 @@
-import { BusFront, Map, Route, Settings } from 'lucide-react';
+import {
+  Map,
+  MapPinned,
+  Route,
+  Settings
+} from 'lucide-react';
 
-function BarraInferior() {
+const opcionesBarra = [
+  {
+    id: 'rutas',
+    texto: 'Rutas',
+    icono: Route
+  },
+  {
+    id: 'mapa',
+    texto: 'Mapa',
+    icono: Map
+  },
+  {
+    id: 'lineas',
+    texto: 'Líneas',
+    icono: MapPinned
+  },
+  {
+    id: 'ajustes',
+    texto: 'Ajustes',
+    icono: Settings
+  }
+];
+
+function BarraInferior({ paginaActiva, onCambiarPagina }) {
   return (
     <nav className="barra-inferior">
-      <a className="barra-inferior__item barra-inferior__item--activo" href="/">
-        <Route size={22} />
-        <span>Rutas</span>
-      </a>
+      {opcionesBarra.map((opcion) => {
+        const Icono = opcion.icono;
+        const activo = paginaActiva === opcion.id;
 
-      <a className="barra-inferior__item" href="/">
-        <Map size={22} />
-        <span>Mapa</span>
-      </a>
-
-      <a className="barra-inferior__item" href="/">
-        <BusFront size={22} />
-        <span>Líneas</span>
-      </a>
-
-      <a className="barra-inferior__item" href="/">
-        <Settings size={22} />
-        <span>Ajustes</span>
-      </a>
+        return (
+          <button
+            type="button"
+            key={opcion.id}
+            className={
+              activo
+                ? 'barra-inferior__item barra-inferior__item--activo'
+                : 'barra-inferior__item'
+            }
+            onClick={() => onCambiarPagina(opcion.id)}
+          >
+            <Icono size={20} />
+            <span>{opcion.texto}</span>
+          </button>
+        );
+      })}
     </nav>
   );
 }

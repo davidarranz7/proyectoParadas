@@ -1,13 +1,43 @@
-import { BusFront, Map, Route, Settings } from 'lucide-react';
+import {
+  BusFront,
+  Map,
+  MapPinned,
+  Route,
+  Settings
+} from 'lucide-react';
+
 import BarraInferior from './BarraInferior';
 
-function ContenedorApp({ children }) {
+const opcionesMenu = [
+  {
+    id: 'rutas',
+    texto: 'Rutas',
+    icono: Route
+  },
+  {
+    id: 'mapa',
+    texto: 'Mapa',
+    icono: Map
+  },
+  {
+    id: 'lineas',
+    texto: 'Líneas',
+    icono: MapPinned
+  },
+  {
+    id: 'ajustes',
+    texto: 'Ajustes',
+    icono: Settings
+  }
+];
+
+function ContenedorApp({ children, paginaActiva, onCambiarPagina }) {
   return (
     <div className="app">
       <aside className="panel-lateral">
         <div className="marca-app">
           <div className="marca-app__icono">
-            <BusFront size={24} />
+            <BusFront size={22} />
           </div>
 
           <div>
@@ -17,25 +47,26 @@ function ContenedorApp({ children }) {
         </div>
 
         <nav className="menu-lateral">
-          <a className="menu-lateral__item menu-lateral__item--activo" href="/">
-            <Route size={20} />
-            <span>Rutas</span>
-          </a>
+          {opcionesMenu.map((opcion) => {
+            const Icono = opcion.icono;
+            const activo = paginaActiva === opcion.id;
 
-          <a className="menu-lateral__item" href="/">
-            <Map size={20} />
-            <span>Mapa</span>
-          </a>
-
-          <a className="menu-lateral__item" href="/">
-            <BusFront size={20} />
-            <span>Líneas</span>
-          </a>
-
-          <a className="menu-lateral__item" href="/">
-            <Settings size={20} />
-            <span>Ajustes</span>
-          </a>
+            return (
+              <button
+                type="button"
+                key={opcion.id}
+                className={
+                  activo
+                    ? 'menu-lateral__item menu-lateral__item--activo'
+                    : 'menu-lateral__item'
+                }
+                onClick={() => onCambiarPagina(opcion.id)}
+              >
+                <Icono size={18} />
+                {opcion.texto}
+              </button>
+            );
+          })}
         </nav>
       </aside>
 
@@ -43,7 +74,10 @@ function ContenedorApp({ children }) {
         {children}
       </main>
 
-      <BarraInferior />
+      <BarraInferior
+        paginaActiva={paginaActiva}
+        onCambiarPagina={onCambiarPagina}
+      />
     </div>
   );
 }

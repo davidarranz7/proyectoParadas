@@ -1,0 +1,131 @@
+/* =========================================================
+   RESULTADOS DE RUTAS
+   Tarjetas de opciones: directa, alternativa, transbordo
+   ========================================================= */
+
+.resultados-rutas {
+  width: 100%;
+  max-width: 520px;
+  margin-top: 20px;
+}
+
+.resultados-rutas__cabecera {
+  margin-bottom: 10px;
+}
+
+.resultados-rutas__cabecera h2 {
+  margin: 0;
+  font-size: 1.08rem;
+  letter-spacing: -0.03em;
+}
+
+.resultados-rutas__cabecera span {
+  display: block;
+  margin-top: 6px;
+  color: var(--color-texto-suave);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.resultado-busqueda-demo {
+  width: 100%;
+  max-width: 520px;
+  margin-top: 14px;
+  padding: 15px;
+  background: #ffffff;
+  border: 1px solid var(--color-borde);
+  border-radius: 19px;
+  box-shadow: var(--sombra-panel);
+}
+
+.resultado-busqueda-demo--boton {
+  display: block;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.resultado-busqueda-demo--seleccionada {
+  border-color: rgba(9, 105, 218, 0.45);
+  box-shadow:
+    0 0 0 3px rgba(9, 105, 218, 0.12),
+    var(--sombra-panel);
+}
+
+.resultado-busqueda-demo__superior {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.resultado-busqueda-demo__superior h2 {
+  margin: 0;
+  font-size: 1.28rem;
+  letter-spacing: -0.04em;
+}
+
+.resultado-busqueda-demo__tiempo {
+  min-width: 58px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: var(--color-principal);
+  background: var(--color-principal-suave);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.resultado-busqueda-demo__detalle {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid var(--color-borde);
+  border-radius: 16px;
+}
+
+.resultado-busqueda-demo__detalle span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--color-texto-suave);
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.resultado-busqueda-demo__detalle strong {
+  display: block;
+  font-size: 0.88rem;
+}
+
+.resultado-busqueda-demo__linea {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.resultado-busqueda-demo__linea p {
+  margin: 0;
+  color: var(--color-texto-suave);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.linea-bus-demo {
+  min-width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: var(--color-principal);
+  border-radius: 14px;
+  font-size: 0.86rem;
+  font-weight: 900;
+}

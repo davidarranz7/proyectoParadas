@@ -1,0 +1,71 @@
+/* =========================================================
+   RUTAS - LAYOUT GENERAL
+   Pantalla principal de búsqueda de rutas
+   ========================================================= */
+
+.inicio-layout {
+  width: 100%;
+  min-height: calc(100vh - 60px);
+  display: grid;
+  grid-template-columns: minmax(330px, 520px) minmax(420px, 1fr);
+  gap: 20px;
+}
+
+.inicio-layout__buscador {
+  min-width: 0;
+}
+
+.pagina-inicio {
+  width: 100%;
+}
+
+.inicio-cabecera {
+  max-width: 620px;
+  margin-bottom: 22px;
+}
+
+.inicio-cabecera h1 {
+  margin: 0;
+  font-size: clamp(2.25rem, 4vw, 3.25rem);
+  line-height: 0.98;
+  letter-spacing: -0.07em;
+}
+
+.inicio-cabecera p {
+  max-width: 520px;
+  margin: 14px 0 0;
+  color: var(--color-texto-suave);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.pagina-inicio__mini {
+  margin: 0 0 8px;
+  color: var(--color-texto-suave);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.mensaje-error {
+  margin: 0;
+  padding: 11px 13px;
+  color: #b91c1c;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.mensaje-info {
+  margin: 0;
+  padding: 11px 13px;
+  color: var(--color-principal);
+  background: var(--color-principal-suave);
+  border: 1px solid rgba(9, 105, 218, 0.18);
+  border-radius: 14px;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
