@@ -1,0 +1,19 @@
+services:
+  postgres-paradabus:
+    image: postgres:16
+    container_name: postgres-paradabus
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: paradabus_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - paradabus_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  paradabus_postgres_data:
