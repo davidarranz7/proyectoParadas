@@ -297,6 +297,17 @@
   font-weight: 700;
 }
 
+.mensaje-info {
+  margin: 0;
+  padding: 12px 14px;
+  color: var(--color-principal);
+  background: var(--color-principal-suave);
+  border: 1px solid rgba(9, 105, 218, 0.18);
+  border-radius: 14px;
+  font-size: 0.92rem;
+  font-weight: 750;
+}
+
 .resultados-rutas {
   width: 100%;
   max-width: 620px;
@@ -483,165 +494,6 @@
   line-height: 1.35;
 }
 
-.mapa-ruta {
-  position: relative;
-  flex: 1;
-  min-height: 360px;
-  overflow: hidden;
-  border: 1px solid var(--color-borde);
-  border-radius: 24px;
-}
-
-.mapa-ruta__leaflet {
-  width: 100%;
-  height: 100%;
-  min-height: 360px;
-}
-
-.mapa-ruta__linea {
-  stroke: var(--color-principal);
-  stroke-width: 6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.mapa-ruta__estado {
-  position: absolute;
-  top: 14px;
-  left: 50%;
-  z-index: 800;
-  transform: translateX(-50%);
-  padding: 9px 14px;
-  color: var(--color-principal);
-  background: #ffffff;
-  border: 1px solid var(--color-borde);
-  border-radius: 999px;
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14);
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.mapa-ruta__estado--error {
-  color: #b91c1c;
-}
-
-.marcador-mapa {
-  display: grid;
-  place-items: center;
-  background: #ffffff;
-  border-radius: 999px;
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
-}
-
-.marcador-mapa span {
-  width: 14px;
-  height: 14px;
-  display: block;
-  border-radius: 999px;
-}
-
-.marcador-mapa--origen {
-  border: 4px solid var(--color-principal);
-}
-
-.marcador-mapa--origen span {
-  background: var(--color-principal);
-}
-
-.marcador-mapa--destino {
-  border: 4px solid #dc2626;
-}
-
-.marcador-mapa--destino span {
-  background: #dc2626;
-}
-
-@media (max-width: 1100px) {
-  .inicio-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .panel-ruta-demo {
-    display: none;
-  }
-}
-
-@media (max-width: 560px) {
-  .inicio-cabecera {
-    margin-bottom: 22px;
-  }
-
-  .buscador-ruta {
-    max-width: none;
-  }
-
-  .campo-ruta {
-    grid-template-columns: 44px 1fr;
-    padding: 14px;
-    border-radius: 18px;
-  }
-
-  .campo-ruta__icono {
-    width: 44px;
-    height: 44px;
-  }
-
-  .boton-ubicacion {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .boton-buscar {
-    min-height: 54px;
-  }
-
-  .resultado-busqueda-demo__detalle {
-    grid-template-columns: 1fr;
-  }
-
-  .resultado-busqueda-demo__detalle svg {
-    transform: rotate(90deg);
-  }
-}
-.destinos-rapidos {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-}
-
-.destino-rapido {
-  width: 100%;
-  padding: 12px 14px;
-  display: grid;
-  gap: 3px;
-  text-align: left;
-  color: var(--color-texto);
-  background: #ffffff;
-  border: 1px solid var(--color-borde);
-  border-radius: 16px;
-}
-
-.destino-rapido:hover {
-  background: #f8fafc;
-  border-color: rgba(9, 105, 218, 0.26);
-}
-
-.destino-rapido--activo {
-  border-color: rgba(9, 105, 218, 0.5);
-  background: var(--color-principal-suave);
-}
-
-.destino-rapido strong {
-  font-size: 0.92rem;
-  font-weight: 900;
-}
-
-.destino-rapido span {
-  color: var(--color-texto-suave);
-  font-size: 0.8rem;
-  font-weight: 650;
-}
-
 .selector-lugar {
   position: relative;
 }
@@ -778,13 +630,282 @@
   font-size: 0.88rem;
   font-weight: 700;
 }
-.mensaje-info {
-  margin: 0;
-  padding: 12px 14px;
+
+.mapa-ruta {
+  position: relative;
+  flex: 1;
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid var(--color-borde);
+  border-radius: 24px;
+}
+
+.mapa-ruta__leaflet {
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+}
+
+.mapa-ruta__estado {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 800;
+  transform: translateX(-50%);
+  padding: 9px 14px;
   color: var(--color-principal);
-  background: var(--color-principal-suave);
-  border: 1px solid rgba(9, 105, 218, 0.18);
-  border-radius: 14px;
-  font-size: 0.92rem;
+  background: #ffffff;
+  border: 1px solid var(--color-borde);
+  border-radius: 999px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.mapa-ruta__estado--secundario {
+  top: 56px;
+}
+
+.mapa-ruta__estado--error {
+  color: #b91c1c;
+}
+
+.mapa-ruta__linea-bus {
+  stroke: var(--color-principal);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mapa-ruta__linea-andando {
+  stroke: #111827;
+  stroke-width: 4;
+  stroke-dasharray: 8 10;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.marcador-mapa {
+  display: grid;
+  place-items: center;
+  background: #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
+}
+
+.marcador-mapa span {
+  width: 14px;
+  height: 14px;
+  display: block;
+  border-radius: 999px;
+}
+
+.marcador-mapa--origen {
+  border: 4px solid var(--color-principal);
+}
+
+.marcador-mapa--origen span {
+  background: var(--color-principal);
+}
+
+.marcador-mapa--usuario {
+  border: 4px solid #16a34a;
+}
+
+.marcador-mapa--usuario span {
+  background: #16a34a;
+}
+
+.marcador-mapa--parada {
+  border: 4px solid var(--color-principal);
+}
+
+.marcador-mapa--parada span {
+  background: var(--color-principal);
+}
+
+.marcador-mapa--destino {
+  border: 4px solid #dc2626;
+}
+
+.marcador-mapa--destino span {
+  background: #dc2626;
+}
+
+.marcador-parada-cercana {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 999px;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.18);
+}
+
+.marcador-parada-cercana span {
+  width: 6px;
+  height: 6px;
+  display: block;
+  border-radius: 999px;
+}
+
+.marcador-parada-cercana--origen {
+  border: 2px solid #16a34a;
+}
+
+.marcador-parada-cercana--origen span {
+  background: #16a34a;
+}
+
+.marcador-parada-cercana--destino {
+  border: 2px solid #dc2626;
+}
+
+.marcador-parada-cercana--destino span {
+  background: #dc2626;
+}
+
+.popup-parada {
+  min-width: 190px;
+  display: grid;
+  gap: 4px;
+}
+
+.popup-parada strong {
+  font-size: 0.95rem;
+}
+
+.popup-parada span {
+  color: #4b5563;
+  font-size: 0.78rem;
+}
+
+.boton-infobus {
+  margin-top: 8px;
+  width: 100%;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #ffffff;
+  background: var(--color-principal);
+  border: 0;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.boton-infobus:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.popup-parada__error {
+  margin: 8px 0 0;
+  padding: 8px;
+  color: #b91c1c;
+  background: #fff1f2;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.popup-parada__vacio {
+  margin: 8px 0 0;
+  padding: 8px;
+  color: #6b7280;
+  background: #f8fafc;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.popup-infobus-lista {
+  margin-top: 8px;
+  display: grid;
+  gap: 7px;
+}
+
+.popup-infobus-item {
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 8px;
+  align-items: center;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.popup-infobus-item__linea {
+  min-width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: var(--color-principal);
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.popup-infobus-item strong {
+  display: block;
+  font-size: 0.78rem;
+}
+
+.popup-infobus-item small {
+  margin-top: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #6b7280;
+  font-size: 0.72rem;
   font-weight: 750;
+}
+
+@media (max-width: 1100px) {
+  .inicio-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .panel-ruta-demo {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .inicio-cabecera {
+    margin-bottom: 22px;
+  }
+
+  .buscador-ruta {
+    max-width: none;
+  }
+
+  .campo-ruta {
+    grid-template-columns: 44px 1fr;
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .campo-ruta__icono {
+    width: 44px;
+    height: 44px;
+  }
+
+  .boton-ubicacion {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .boton-buscar {
+    min-height: 54px;
+  }
+
+  .resultado-busqueda-demo__detalle {
+    grid-template-columns: 1fr;
+  }
+
+  .resultado-busqueda-demo__detalle svg {
+    transform: rotate(90deg);
+  }
 }

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 
 import SelectorLugar from '../componentes/comunes/SelectorLugar';
+import { buscarLugaresPorTexto } from '../servicios/lugaresServicio';
 import { buscarRutasDirectas } from '../servicios/rutasServicio';
 import MapaRuta from '../componentes/mapa/MapaRuta';
 
@@ -48,11 +49,98 @@ function obtenerMensajeErrorUbicacion(error) {
   return 'No se pudo obtener tu ubicación.';
 }
 
+function normalizarLugarBackend(lugar, indice) {
+  return {
+    id: `${lugar.fuente || 'backend'}-${lugar.lat}-${lugar.lon}-${indice}`,
+    nombre: lugar.nombre,
+    descripcion: lugar.direccion,
+    lat: lugar.lat,
+    lon: lugar.lon,
+    tipo: 'lugar',
+    fuente: lugar.fuente || 'backend'
+  };
+}
+
+function obtenerHistorial(claveHistorial) {
+  try {
+    const historialGuardado = localStorage.getItem(claveHistorial);
+
+    if (!historialGuardado) {
+      return [];
+    }
+
+    const historial = JSON.parse(historialGuardado);
+
+    return Array.isArray(historial) ? historial : [];
+  } catch {
+    return [];
+  }
+}
+
+function guardarEnHistorial(claveHistorial, lugar) {
+  if (!lugar) {
+    return;
+  }
+
+  const historialActual = obtenerHistorial(claveHistorial);
+
+  const historialSinRepetidos = historialActual.filter((item) => {
+    const mismoNombre = item.nombre === lugar.nombre;
+    const mismaLat = Number(item.lat) === Number(lugar.lat);
+    const mismaLon = Number(item.lon) === Number(lugar.lon);
+
+    return !(mismoNombre && mismaLat && mismaLon);
+  });
+
+  const nuevoHistorial = [
+    lugar,
+    ...historialSinRepetidos
+  ].slice(0, 6);
+
+  localStorage.setItem(claveHistorial, JSON.stringify(nuevoHistorial));
+}
+
+async function resolverLugarDesdeTexto({
+  lugarSeleccionado,
+  texto,
+  tipoLugar
+}) {
+  if (lugarSeleccionado) {
+    return lugarSeleccionado;
+  }
+
+  const textoLimpio = texto.trim();
+
+  if (!textoLimpio) {
+    throw new Error(
+      tipoLugar === 'origen'
+        ? 'Selecciona un origen o usa tu ubicación actual.'
+        : 'Escribe un destino para buscar una ruta.'
+    );
+  }
+
+  const resultados = await buscarLugaresPorTexto(textoLimpio);
+
+  if (!resultados || resultados.length === 0) {
+    throw new Error(`No encontramos ningún resultado para "${textoLimpio}".`);
+  }
+
+  const mejorResultado = normalizarLugarBackend(resultados[0], 0);
+
+  guardarEnHistorial(`paradabus_historial_${tipoLugar}`, mejorResultado);
+
+  return mejorResultado;
+}
+
 function InicioPagina() {
+  const [textoOrigen, setTextoOrigen] = useState('');
+  const [textoDestino, setTextoDestino] = useState('');
+
   const [origenSeleccionado, setOrigenSeleccionado] = useState(null);
   const [destinoSeleccionado, setDestinoSeleccionado] = useState(null);
 
   const [buscando, setBuscando] = useState(false);
+  const [resolviendoLugares, setResolviendoLugares] = useState(false);
   const [cargandoUbicacion, setCargandoUbicacion] = useState(false);
 
   const [resultado, setResultado] = useState(null);
@@ -71,12 +159,26 @@ function InicioPagina() {
 
   function cambiarOrigen(lugar) {
     setOrigenSeleccionado(lugar);
+    setTextoOrigen(lugar?.nombre || '');
     setError('');
     limpiarResultados();
   }
 
   function cambiarDestino(lugar) {
     setDestinoSeleccionado(lugar);
+    setTextoDestino(lugar?.nombre || '');
+    setError('');
+    limpiarResultados();
+  }
+
+  function cambiarTextoOrigen(texto) {
+    setTextoOrigen(texto);
+    setError('');
+    limpiarResultados();
+  }
+
+  function cambiarTextoDestino(texto) {
+    setTextoDestino(texto);
     setError('');
     limpiarResultados();
   }
@@ -107,12 +209,15 @@ function InicioPagina() {
         };
 
         setOrigenSeleccionado(lugarUbicacionActual);
+        setTextoOrigen(lugarUbicacionActual.nombre);
+
         setCargandoUbicacion(false);
         limpiarResultados();
       },
       (errorUbicacionNavegador) => {
         setErrorUbicacion(obtenerMensajeErrorUbicacion(errorUbicacionNavegador));
         setOrigenSeleccionado(null);
+        setTextoOrigen('');
         setCargandoUbicacion(false);
         limpiarResultados();
       },
@@ -125,11 +230,11 @@ function InicioPagina() {
   }
 
   function elegirOrigenEnMapa() {
-    setError('En el siguiente paso activamos elegir origen manualmente en el mapa.');
+    setError('Más adelante activamos elegir origen manualmente en el mapa.');
   }
 
   function elegirDestinoEnMapa() {
-    setError('En el siguiente paso activamos elegir destino manualmente en el mapa.');
+    setError('Más adelante activamos elegir destino manualmente en el mapa.');
   }
 
   async function buscarRuta() {
@@ -138,24 +243,35 @@ function InicioPagina() {
     setResultado(null);
     setRutaSeleccionada(null);
 
-    if (!origenSeleccionado) {
-      setError('Selecciona un origen o usa tu ubicación actual.');
-      return;
-    }
-
-    if (!destinoSeleccionado) {
-      setError('Selecciona un destino de las sugerencias.');
-      return;
-    }
-
     try {
+      setResolviendoLugares(true);
+
+      const origenFinal = await resolverLugarDesdeTexto({
+        lugarSeleccionado: origenSeleccionado,
+        texto: textoOrigen,
+        tipoLugar: 'origen'
+      });
+
+      const destinoFinal = await resolverLugarDesdeTexto({
+        lugarSeleccionado: destinoSeleccionado,
+        texto: textoDestino,
+        tipoLugar: 'destino'
+      });
+
+      setOrigenSeleccionado(origenFinal);
+      setDestinoSeleccionado(destinoFinal);
+
+      setTextoOrigen(origenFinal.nombre);
+      setTextoDestino(destinoFinal.nombre);
+
+      setResolviendoLugares(false);
       setBuscando(true);
 
       const respuesta = await buscarRutasDirectas({
-        origenLat: origenSeleccionado.lat,
-        origenLon: origenSeleccionado.lon,
-        destinoLat: destinoSeleccionado.lat,
-        destinoLon: destinoSeleccionado.lon,
+        origenLat: origenFinal.lat,
+        origenLon: origenFinal.lon,
+        destinoLat: destinoFinal.lat,
+        destinoLon: destinoFinal.lon,
         fecha: obtenerFechaHoy(),
         hora: obtenerHoraActual(),
         maxResultados: 5
@@ -163,12 +279,13 @@ function InicioPagina() {
 
       setResultado(respuesta);
       setRutaSeleccionada(respuesta.opciones?.[0] || null);
-    } catch (errorBackend) {
+    } catch (errorBusqueda) {
       setError(
-        errorBackend.message ||
-        'No se pudo conectar con el backend de rutas.'
+        errorBusqueda.message ||
+        'No se pudo calcular la ruta.'
       );
     } finally {
+      setResolviendoLugares(false);
       setBuscando(false);
     }
   }
@@ -195,6 +312,7 @@ function InicioPagina() {
               tipo="origen"
               valor={origenSeleccionado}
               onSeleccionar={cambiarOrigen}
+              onTextoCambiado={cambiarTextoOrigen}
               onUsarUbicacionActual={pedirUbicacionActual}
               onElegirEnMapa={elegirOrigenEnMapa}
             />
@@ -213,12 +331,19 @@ function InicioPagina() {
 
             <SelectorLugar
               etiqueta="Destino"
-              placeholder="Ej: Samil, Plaza América, Vialia..."
+              placeholder="Ej: Playa Samil, Plaza América..."
               tipo="destino"
               valor={destinoSeleccionado}
               onSeleccionar={cambiarDestino}
+              onTextoCambiado={cambiarTextoDestino}
               onElegirEnMapa={elegirDestinoEnMapa}
             />
+
+            {resolviendoLugares && (
+              <p className="mensaje-info">
+                Buscando coordenadas del origen y destino...
+              </p>
+            )}
 
             {error && (
               <p className="mensaje-error">
@@ -230,7 +355,7 @@ function InicioPagina() {
               className="boton-buscar"
               type="button"
               onClick={buscarRuta}
-              disabled={buscando || cargandoUbicacion}
+              disabled={buscando || cargandoUbicacion || resolviendoLugares}
             >
               <Search size={20} />
               {buscando ? 'Buscando ruta...' : 'Buscar ruta'}
@@ -330,8 +455,8 @@ function InicioPagina() {
             <h2>Busca una ruta</h2>
 
             <p>
-              Elige un origen y un destino. Puedes escribir un lugar, usar tu
-              ubicación actual o, más adelante, marcar un punto en el mapa.
+              Escribe origen y destino. Puedes seleccionar una sugerencia,
+              usar tu ubicación actual o escribir el lugar y buscar directamente.
             </p>
           </section>
         )}
@@ -429,7 +554,7 @@ function InicioPagina() {
 
                 <div>
                   <span>Camina hasta el destino</span>
-                  <strong>{destinoSeleccionado?.nombre || 'Destino seleccionado'}</strong>
+                  <strong>{destinoSeleccionado?.nombre || textoDestino || 'Destino seleccionado'}</strong>
                   <p>
                     {rutaPanel.minutosAndandoDestino} min andando · llegada final {rutaPanel.horaLlegadaFinal}
                   </p>
@@ -437,7 +562,11 @@ function InicioPagina() {
               </div>
             </section>
 
-            <MapaRuta ruta={rutaPanel} />
+            <MapaRuta
+            ruta={rutaPanel}
+            origen={origenSeleccionado}
+            destino={destinoSeleccionado}
+          />
           </>
         )}
       </aside>

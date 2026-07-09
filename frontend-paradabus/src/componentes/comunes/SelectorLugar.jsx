@@ -117,6 +117,36 @@ function SelectorLugar({
     };
   }, []);
 
+  async function cargarSugerencias(textoBusqueda) {
+    const textoBusquedaLimpio = textoBusqueda.trim();
+
+    if (textoBusquedaLimpio.length < 2) {
+      setSugerencias([]);
+      setBuscandoSugerencias(false);
+      return [];
+    }
+
+    try {
+      setErrorBusqueda('');
+      setBuscandoSugerencias(true);
+
+      const respuesta = await buscarLugaresPorTexto(textoBusquedaLimpio);
+
+      const lugaresNormalizados = respuesta.map((lugar, indice) =>
+        normalizarLugarBackend(lugar, indice)
+      );
+
+      setSugerencias(lugaresNormalizados);
+
+      return lugaresNormalizados;
+    } catch {
+      setErrorBusqueda('No se pudieron cargar sugerencias.');
+      return [];
+    } finally {
+      setBuscandoSugerencias(false);
+    }
+  }
+
   useEffect(() => {
     setErrorBusqueda('');
     setSugerencias([]);
@@ -125,27 +155,13 @@ function SelectorLugar({
       clearTimeout(timeoutBusquedaRef.current);
     }
 
-    if (!mostrarSugerencias) {
+    if (!abierto || !mostrarSugerencias) {
       setBuscandoSugerencias(false);
       return;
     }
 
-    timeoutBusquedaRef.current = setTimeout(async () => {
-      try {
-        setBuscandoSugerencias(true);
-
-        const respuesta = await buscarLugaresPorTexto(textoLimpio);
-
-        const lugaresNormalizados = respuesta.map((lugar, indice) =>
-          normalizarLugarBackend(lugar, indice)
-        );
-
-        setSugerencias(lugaresNormalizados);
-      } catch {
-        setErrorBusqueda('No se pudieron cargar sugerencias.');
-      } finally {
-        setBuscandoSugerencias(false);
-      }
+    timeoutBusquedaRef.current = setTimeout(() => {
+      cargarSugerencias(textoLimpio);
     }, 350);
 
     return () => {
@@ -153,7 +169,7 @@ function SelectorLugar({
         clearTimeout(timeoutBusquedaRef.current);
       }
     };
-  }, [textoLimpio, mostrarSugerencias]);
+  }, [abierto, textoLimpio, mostrarSugerencias]);
 
   function cambiarTexto(evento) {
     const nuevoTexto = evento.target.value;
@@ -180,6 +196,42 @@ function SelectorLugar({
     setHistorial(obtenerHistorial(claveHistorial));
 
     onSeleccionar(lugar);
+  }
+
+  async function confirmarTextoConEnter() {
+    const textoConfirmar = texto.trim();
+
+    if (!textoConfirmar) {
+      setAbierto(false);
+      return;
+    }
+
+    if (sugerencias.length > 0) {
+      seleccionarLugar(sugerencias[0]);
+      return;
+    }
+
+    const lugaresEncontrados = await cargarSugerencias(textoConfirmar);
+
+    if (lugaresEncontrados.length > 0) {
+      seleccionarLugar(lugaresEncontrados[0]);
+      return;
+    }
+
+    setAbierto(false);
+  }
+
+  function manejarTecla(evento) {
+    if (evento.key === 'Enter') {
+      evento.preventDefault();
+      confirmarTextoConEnter();
+      return;
+    }
+
+    if (evento.key === 'Escape') {
+      evento.preventDefault();
+      setAbierto(false);
+    }
   }
 
   function limpiarLugar() {
@@ -225,6 +277,7 @@ function SelectorLugar({
           value={texto}
           onChange={cambiarTexto}
           onFocus={() => setAbierto(true)}
+          onKeyDown={manejarTecla}
           placeholder={placeholder}
         />
 
@@ -320,7 +373,7 @@ function SelectorLugar({
 
               {!buscandoSugerencias && !errorBusqueda && sugerencias.length === 0 && (
                 <p className="selector-lugar__sin-resultados">
-                  No encontramos sugerencias. Puedes escribir el lugar y buscar igualmente.
+                  Pulsa Enter para buscar y seleccionar automáticamente.
                 </p>
               )}
 
