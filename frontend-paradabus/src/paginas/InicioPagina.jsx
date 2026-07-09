@@ -12,6 +12,7 @@ import {
 import SelectorLugar from '../componentes/comunes/SelectorLugar';
 import { buscarLugaresPorTexto } from '../servicios/lugaresServicio';
 import { buscarRutasDirectas } from '../servicios/rutasServicio';
+import { obtenerInfoBusParada } from '../servicios/infobusServicio';
 import MapaRuta from '../componentes/mapa/MapaRuta';
 
 function obtenerFechaHoy() {
@@ -132,6 +133,87 @@ async function resolverLugarDesdeTexto({
   return mejorResultado;
 }
 
+function obtenerListaInfoBus(respuesta) {
+  if (Array.isArray(respuesta)) {
+    return respuesta;
+  }
+
+  return (
+    respuesta?.proximosBuses ||
+    respuesta?.proximosBus ||
+    respuesta?.proximos ||
+    respuesta?.buses ||
+    respuesta?.resultados ||
+    respuesta?.llegadas ||
+    []
+  );
+}
+
+function normalizarLinea(valor) {
+  return String(valor || '')
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .trim();
+}
+
+function buscarTiempoInfoBusParaLinea(respuesta, lineaRuta) {
+  const lista = obtenerListaInfoBus(respuesta);
+  const lineaNormalizada = normalizarLinea(lineaRuta);
+
+  const busEncontrado = lista.find((item) => {
+    return normalizarLinea(item.linea) === lineaNormalizada;
+  });
+
+  if (!busEncontrado) {
+    return null;
+  }
+
+  const minutos = Number(busEncontrado.minutos);
+
+  if (!Number.isFinite(minutos)) {
+    return null;
+  }
+
+  return {
+    minutos,
+    linea: busEncontrado.linea,
+    ruta: busEncontrado.ruta
+  };
+}
+
+function generarClaveOpcion(opcion, indice) {
+  return `${opcion.linea}-${opcion.tripId}-${opcion.paradaOrigen?.id || 'sin-parada'}-${indice}`;
+}
+
+function obtenerColorTiempoInfoBus(minutos) {
+  if (minutos <= 3) {
+    return 'rojo';
+  }
+
+  if (minutos <= 5) {
+    return 'naranja';
+  }
+
+  return 'verde';
+}
+
+function IndicadorInfoBus({ tiempo }) {
+  if (!tiempo || tiempo.minutos === undefined || tiempo.minutos === null) {
+    return null;
+  }
+
+  const color = obtenerColorTiempoInfoBus(tiempo.minutos);
+
+  return (
+    <span
+      className={`indicador-infobus indicador-infobus--${color}`}
+      title={`InfoBus: ${tiempo.minutos} minutos`}
+    >
+      {tiempo.minutos}
+    </span>
+  );
+}
+
 function InicioPagina() {
   const [textoOrigen, setTextoOrigen] = useState('');
   const [textoDestino, setTextoDestino] = useState('');
@@ -145,6 +227,7 @@ function InicioPagina() {
 
   const [resultado, setResultado] = useState(null);
   const [rutaSeleccionada, setRutaSeleccionada] = useState(null);
+  const [tiemposInfoBus, setTiemposInfoBus] = useState({});
 
   const [error, setError] = useState('');
   const [errorUbicacion, setErrorUbicacion] = useState('');
@@ -155,6 +238,7 @@ function InicioPagina() {
   function limpiarResultados() {
     setResultado(null);
     setRutaSeleccionada(null);
+    setTiemposInfoBus({});
   }
 
   function cambiarOrigen(lugar) {
@@ -181,6 +265,34 @@ function InicioPagina() {
     setTextoDestino(texto);
     setError('');
     limpiarResultados();
+  }
+
+  async function cargarInfoBusParaOpciones(opcionesRuta) {
+    const resultadosInfoBus = {};
+
+    await Promise.all(
+      opcionesRuta.map(async (opcion, indice) => {
+        const paradaId = opcion.paradaOrigen?.id;
+
+        if (!paradaId) {
+          return;
+        }
+
+        try {
+          const respuestaInfoBus = await obtenerInfoBusParada(paradaId);
+          const tiempoLinea = buscarTiempoInfoBusParaLinea(respuestaInfoBus, opcion.linea);
+
+          if (tiempoLinea) {
+            const clave = generarClaveOpcion(opcion, indice);
+            resultadosInfoBus[clave] = tiempoLinea;
+          }
+        } catch (errorInfoBus) {
+          console.warn('No se pudo cargar InfoBus para la opción:', opcion, errorInfoBus);
+        }
+      })
+    );
+
+    setTiemposInfoBus(resultadosInfoBus);
   }
 
   function pedirUbicacionActual() {
@@ -242,6 +354,7 @@ function InicioPagina() {
     setErrorUbicacion('');
     setResultado(null);
     setRutaSeleccionada(null);
+    setTiemposInfoBus({});
 
     try {
       setResolviendoLugares(true);
@@ -277,8 +390,12 @@ function InicioPagina() {
         maxResultados: 5
       });
 
+      const opcionesRespuesta = respuesta.opciones || [];
+
       setResultado(respuesta);
-      setRutaSeleccionada(respuesta.opciones?.[0] || null);
+      setRutaSeleccionada(opcionesRespuesta[0] || null);
+
+      cargarInfoBusParaOpciones(opcionesRespuesta);
     } catch (errorBusqueda) {
       setError(
         errorBusqueda.message ||
@@ -289,6 +406,18 @@ function InicioPagina() {
       setBuscando(false);
     }
   }
+
+  const indiceRutaPanel = rutaPanel
+    ? opciones.findIndex((opcion) => opcion.tripId === rutaPanel.tripId)
+    : -1;
+
+  const claveRutaPanel = rutaPanel
+    ? generarClaveOpcion(rutaPanel, indiceRutaPanel >= 0 ? indiceRutaPanel : 0)
+    : null;
+
+  const tiempoInfoBusRutaPanel = claveRutaPanel
+    ? tiemposInfoBus[claveRutaPanel]
+    : null;
 
   return (
     <section className="inicio-layout">
@@ -383,6 +512,8 @@ function InicioPagina() {
 
               {opciones.map((opcion, indice) => {
                 const seleccionada = rutaSeleccionada?.tripId === opcion.tripId;
+                const claveOpcion = generarClaveOpcion(opcion, indice);
+                const tiempoInfoBus = tiemposInfoBus[claveOpcion];
 
                 return (
                   <button
@@ -392,7 +523,7 @@ function InicioPagina() {
                         ? 'resultado-busqueda-demo resultado-busqueda-demo--boton resultado-busqueda-demo--seleccionada'
                         : 'resultado-busqueda-demo resultado-busqueda-demo--boton'
                     }
-                    key={`${opcion.linea}-${opcion.tripId}-${indice}`}
+                    key={claveOpcion}
                     onClick={() => setRutaSeleccionada(opcion)}
                   >
                     <div className="resultado-busqueda-demo__superior">
@@ -429,6 +560,8 @@ function InicioPagina() {
                       <span className="linea-bus-demo">
                         {opcion.linea}
                       </span>
+
+                      <IndicadorInfoBus tiempo={tiempoInfoBus} />
 
                       <p>
                         {opcion.destinoBus} · {opcion.transbordos} transbordos ·
@@ -481,8 +614,9 @@ function InicioPagina() {
                 </span>
 
                 <div>
-                  <strong>
+                  <strong className="tarjeta-ruta-demo__titulo-linea">
                     {rutaPanel.linea} · {rutaPanel.destinoBus}
+                    <IndicadorInfoBus tiempo={tiempoInfoBusRutaPanel} />
                   </strong>
 
                   <p>
@@ -528,8 +662,9 @@ function InicioPagina() {
 
                 <div>
                   <span>Coge el bus</span>
-                  <strong>
+                  <strong className="paso-ruta__linea-infobus">
                     Línea {rutaPanel.linea} · sale {rutaPanel.horaSalidaBus}
+                    <IndicadorInfoBus tiempo={tiempoInfoBusRutaPanel} />
                   </strong>
                   <p>{rutaPanel.destinoBus}</p>
                 </div>
@@ -563,10 +698,10 @@ function InicioPagina() {
             </section>
 
             <MapaRuta
-            ruta={rutaPanel}
-            origen={origenSeleccionado}
-            destino={destinoSeleccionado}
-          />
+              ruta={rutaPanel}
+              origen={origenSeleccionado}
+              destino={destinoSeleccionado}
+            />
           </>
         )}
       </aside>

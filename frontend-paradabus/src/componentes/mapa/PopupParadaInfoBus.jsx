@@ -9,6 +9,8 @@ function obtenerListaInfoBus(respuesta) {
   }
 
   return (
+    respuesta?.proximosBuses ||
+    respuesta?.proximosBus ||
     respuesta?.proximos ||
     respuesta?.buses ||
     respuesta?.resultados ||
@@ -30,6 +32,7 @@ function obtenerTextoLinea(item) {
 
 function obtenerTextoDestino(item) {
   return (
+    item.ruta ||
     item.destino ||
     item.destinoBus ||
     item.cabecera ||
@@ -78,10 +81,17 @@ function PopupParadaInfoBus({ parada, zona }) {
       setCargando(true);
 
       const respuesta = await obtenerInfoBusParada(parada.id);
+
+      console.log('Respuesta InfoBus parada:', parada.id, respuesta);
+
       const lista = obtenerListaInfoBus(respuesta);
+
+      console.log('Lista InfoBus extraída:', lista);
 
       setInfoBus(lista);
     } catch (errorBackend) {
+      console.error('Error cargando InfoBus:', errorBackend);
+
       setError(
         errorBackend.message ||
         'No se pudo cargar InfoBus de esta parada.'
@@ -142,7 +152,7 @@ function PopupParadaInfoBus({ parada, zona }) {
           {infoBus.map((item, indice) => (
             <div
               className="popup-infobus-item"
-              key={`${obtenerTextoLinea(item)}-${indice}`}
+              key={`${obtenerTextoLinea(item)}-${obtenerTextoTiempo(item)}-${indice}`}
             >
               <span className="popup-infobus-item__linea">
                 {obtenerTextoLinea(item)}

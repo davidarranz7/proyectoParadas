@@ -909,3 +909,76 @@
     transform: rotate(90deg);
   }
 }
+
+.indicador-infobus {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #ffffff;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 950;
+  line-height: 1;
+  animation: parpadeo-infobus 1.15s ease-in-out infinite;
+}
+
+.indicador-infobus--verde {
+  background: #16a34a;
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.55);
+}
+
+.indicador-infobus--naranja {
+  background: #f97316;
+  box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.55);
+}
+
+.indicador-infobus--rojo {
+  background: #dc2626;
+  box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6);
+}
+
+.tarjeta-ruta-demo__titulo-linea,
+.paso-ruta__linea-infobus {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@keyframes parpadeo-infobus {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.08);
+    opacity: 0.72;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.marcador-parada-recorrido {
+  background: transparent;
+  border: 0;
+}
+
+.marcador-parada-recorrido span {
+  width: 14px;
+  height: 14px;
+  display: block;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 3px solid #2563eb;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.22);
+}
+
+.marcador-parada-recorrido--intermedia span {
+  background: #ffffff;
+  border-color: #2563eb;
+}

@@ -3,8 +3,7 @@ import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-
 import L from 'leaflet';
 
 import { obtenerRecorridoMapaLinea } from '../../servicios/lineasServicio';
-import { obtenerParadasCercanas } from '../../servicios/paradasServicio';
-import PopupParadaInfoBus from './PopupParadaInfoBus';
+import { obtenerParadasTrip } from '../../servicios/paradasTripServicio';
 
 function crearIconoMapa(tipo) {
   return L.divIcon({
@@ -15,9 +14,9 @@ function crearIconoMapa(tipo) {
   });
 }
 
-function crearIconoParadaCercana(tipo) {
+function crearIconoParadaRecorrido(tipo) {
   return L.divIcon({
-    className: `marcador-parada-cercana marcador-parada-cercana--${tipo}`,
+    className: `marcador-parada-recorrido marcador-parada-recorrido--${tipo}`,
     html: '<span></span>',
     iconSize: [16, 16],
     iconAnchor: [8, 8]
@@ -245,61 +244,62 @@ function obtenerPuntoLugar(lugar) {
   return [lat, lon];
 }
 
-function normalizarParada(parada, puntoReferencia) {
+function obtenerStopIdParada(parada) {
+  return (
+    parada?.stopId ??
+    parada?.stop_id ??
+    parada?.gtfsStopId ??
+    parada?.gtfs_stop_id ??
+    null
+  );
+}
+
+function normalizarTipoParada(tipo) {
+  return String(tipo || 'INTERMEDIA').toUpperCase();
+}
+
+function normalizarParadaTrip(parada) {
   const punto = obtenerPuntoLugar(parada);
 
   if (!punto) {
     return null;
   }
 
-  const distanciaMetros = puntoReferencia
-    ? Math.round(calcularDistanciaMetros(puntoReferencia, punto))
-    : null;
-
   return {
-    id: parada.id ?? parada.paradaId ?? parada.codigo ?? parada.codigoParada,
-    stopId: parada.stopId ?? parada.stop_id ?? parada.gtfsStopId,
-    nombre: parada.nombre ?? parada.name ?? parada.denominacion ?? 'Parada sin nombre',
+    orden: parada.orden ?? parada.stopSequence ?? parada.stop_sequence,
+    idParada: parada.idParada ?? parada.id ?? parada.paradaId,
+    stopId: parada.stopId ?? parada.stop_id,
+    nombre: parada.nombre ?? parada.stopName ?? parada.stop_name ?? 'Parada',
     lat: punto[0],
     lon: punto[1],
-    distanciaMetros
+    horaLlegada: parada.horaLlegada ?? parada.arrivalTime ?? parada.arrival_time,
+    horaSalida: parada.horaSalida ?? parada.departureTime ?? parada.departure_time,
+    tipo: normalizarTipoParada(parada.tipo)
   };
 }
 
-function quitarParadasDuplicadas(paradas) {
-  const mapa = new Map();
+function obtenerListaParadasTrip(respuesta) {
+  if (Array.isArray(respuesta)) {
+    return respuesta;
+  }
 
-  paradas.forEach((parada) => {
-    const clave = `${parada.id || ''}-${parada.stopId || ''}-${parada.lat}-${parada.lon}`;
-
-    if (!mapa.has(clave)) {
-      mapa.set(clave, parada);
-    }
-  });
-
-  return Array.from(mapa.values());
-}
-
-function normalizarParadaRuta(parada, nombreFallback) {
-  return {
-    id: parada?.id ?? parada?.paradaId ?? parada?.codigo ?? parada?.codigoParada,
-    stopId: parada?.stopId ?? parada?.stop_id ?? parada?.gtfsStopId,
-    nombre: parada?.nombre ?? parada?.name ?? parada?.denominacion ?? nombreFallback,
-    lat: parada?.lat ?? parada?.latitud ?? parada?.latitude,
-    lon: parada?.lon ?? parada?.lng ?? parada?.longitud ?? parada?.longitude
-  };
+  return (
+    respuesta?.paradas ||
+    respuesta?.paradasTrip ||
+    respuesta?.resultados ||
+    []
+  );
 }
 
 function MapaRuta({ ruta, origen, destino }) {
   const [puntosBusCompletos, setPuntosBusCompletos] = useState([]);
-  const [paradasOrigen, setParadasOrigen] = useState([]);
-  const [paradasDestino, setParadasDestino] = useState([]);
+  const [paradasTrip, setParadasTrip] = useState([]);
 
   const [cargandoRecorrido, setCargandoRecorrido] = useState(false);
-  const [cargandoParadas, setCargandoParadas] = useState(false);
+  const [cargandoParadasTrip, setCargandoParadasTrip] = useState(false);
 
   const [errorRecorrido, setErrorRecorrido] = useState('');
-  const [errorParadas, setErrorParadas] = useState('');
+  const [errorParadasTrip, setErrorParadasTrip] = useState('');
 
   const puntoOrigenUsuario = useMemo(() => {
     return obtenerPuntoLugar(origen);
@@ -317,59 +317,13 @@ function MapaRuta({ ruta, origen, destino }) {
     return obtenerPuntoLugar(ruta?.paradaDestino);
   }, [ruta?.paradaDestino]);
 
-  useEffect(() => {
-    async function cargarParadasCercanas() {
-      setParadasOrigen([]);
-      setParadasDestino([]);
-      setErrorParadas('');
+  const stopOrigen = useMemo(() => {
+    return obtenerStopIdParada(ruta?.paradaOrigen);
+  }, [ruta?.paradaOrigen]);
 
-      if (!puntoOrigenUsuario && !puntoDestinoUsuario) {
-        return;
-      }
-
-      try {
-        setCargandoParadas(true);
-
-        const [respuestaOrigen, respuestaDestino] = await Promise.all([
-          puntoOrigenUsuario
-            ? obtenerParadasCercanas({
-                lat: puntoOrigenUsuario[0],
-                lon: puntoOrigenUsuario[1],
-                radioMetros: 500
-              })
-            : Promise.resolve([]),
-
-          puntoDestinoUsuario
-            ? obtenerParadasCercanas({
-                lat: puntoDestinoUsuario[0],
-                lon: puntoDestinoUsuario[1],
-                radioMetros: 500
-              })
-            : Promise.resolve([])
-        ]);
-
-        const paradasOrigenNormalizadas = respuestaOrigen
-          .map((parada) => normalizarParada(parada, puntoOrigenUsuario))
-          .filter(Boolean)
-          .sort((a, b) => (a.distanciaMetros ?? 99999) - (b.distanciaMetros ?? 99999));
-
-        const paradasDestinoNormalizadas = respuestaDestino
-          .map((parada) => normalizarParada(parada, puntoDestinoUsuario))
-          .filter(Boolean)
-          .sort((a, b) => (a.distanciaMetros ?? 99999) - (b.distanciaMetros ?? 99999));
-
-        setParadasOrigen(quitarParadasDuplicadas(paradasOrigenNormalizadas));
-        setParadasDestino(quitarParadasDuplicadas(paradasDestinoNormalizadas));
-      } catch (error) {
-        console.error('Error cargando paradas cercanas:', error);
-        setErrorParadas('No se pudieron cargar las paradas cercanas.');
-      } finally {
-        setCargandoParadas(false);
-      }
-    }
-
-    cargarParadasCercanas();
-  }, [puntoOrigenUsuario, puntoDestinoUsuario]);
+  const stopDestino = useMemo(() => {
+    return obtenerStopIdParada(ruta?.paradaDestino);
+  }, [ruta?.paradaDestino]);
 
   useEffect(() => {
     async function cargarRecorridoBus() {
@@ -408,6 +362,42 @@ function MapaRuta({ ruta, origen, destino }) {
     cargarRecorridoBus();
   }, [ruta?.linea, ruta?.tripId]);
 
+  useEffect(() => {
+    async function cargarParadasDelTrip() {
+      setParadasTrip([]);
+      setErrorParadasTrip('');
+
+      if (!ruta?.tripId) {
+        return;
+      }
+
+      try {
+        setCargandoParadasTrip(true);
+
+        const respuesta = await obtenerParadasTrip({
+          tripId: ruta.tripId,
+          stopOrigen,
+          stopDestino
+        });
+
+        const lista = obtenerListaParadasTrip(respuesta);
+
+        const paradasNormalizadas = lista
+          .map(normalizarParadaTrip)
+          .filter(Boolean);
+
+        setParadasTrip(paradasNormalizadas);
+      } catch (error) {
+        console.error('Error cargando paradas del trip:', error);
+        setErrorParadasTrip('No se pudieron cargar las paradas intermedias.');
+      } finally {
+        setCargandoParadasTrip(false);
+      }
+    }
+
+    cargarParadasDelTrip();
+  }, [ruta?.tripId, stopOrigen, stopDestino]);
+
   const puntosBusRecortados = useMemo(() => {
     if (puntosBusCompletos.length >= 2 && paradaOrigen && paradaDestino) {
       return recortarRecorridoEntreParadas(
@@ -444,26 +434,22 @@ function MapaRuta({ ruta, origen, destino }) {
     ].filter(Boolean);
   }, [puntosAndandoOrigen, puntosBusRecortados, puntosAndandoDestino]);
 
-  const paradasCercanas = useMemo(() => {
-    return quitarParadasDuplicadas([
-      ...paradasOrigen.map((parada) => ({
-        ...parada,
-        zona: 'origen'
-      })),
-      ...paradasDestino.map((parada) => ({
-        ...parada,
-        zona: 'destino'
-      }))
-    ]);
-  }, [paradasOrigen, paradasDestino]);
+  const paradasIntermedias = useMemo(() => {
+    return paradasTrip.filter((parada) => {
+      const esSubida = parada.tipo === 'SUBIDA' || parada.stopId === stopOrigen;
+      const esBajada = parada.tipo === 'BAJADA' || parada.stopId === stopDestino;
 
-  const paradaOrigenPopup = useMemo(() => {
-    return normalizarParadaRuta(ruta?.paradaOrigen, 'Parada de subida');
-  }, [ruta?.paradaOrigen]);
+      return !esSubida && !esBajada;
+    });
+  }, [paradasTrip, stopOrigen, stopDestino]);
 
-  const paradaDestinoPopup = useMemo(() => {
-    return normalizarParadaRuta(ruta?.paradaDestino, 'Parada de bajada');
-  }, [ruta?.paradaDestino]);
+  const numeroParadasHastaBajar = useMemo(() => {
+    if (paradasTrip.length <= 1) {
+      return 0;
+    }
+
+    return paradasTrip.length - 1;
+  }, [paradasTrip]);
 
   const centroMapa = puntoOrigenUsuario || paradaOrigen || [42.232045931, -8.708603793];
 
@@ -475,15 +461,15 @@ function MapaRuta({ ruta, origen, destino }) {
         </div>
       )}
 
-      {cargandoParadas && (
+      {cargandoParadasTrip && (
         <div className="mapa-ruta__estado mapa-ruta__estado--secundario">
-          Cargando paradas cercanas...
+          Cargando paradas del recorrido...
         </div>
       )}
 
-      {!cargandoRecorrido && !cargandoParadas && puntosBusRecortados.length >= 2 && (
+      {!cargandoRecorrido && !cargandoParadasTrip && puntosBusRecortados.length >= 2 && (
         <div className="mapa-ruta__estado">
-          Ruta cargada · {paradasOrigen.length} paradas cerca del origen · {paradasDestino.length} cerca del destino
+          Ruta cargada · baja dentro de {numeroParadasHastaBajar} paradas
         </div>
       )}
 
@@ -493,9 +479,9 @@ function MapaRuta({ ruta, origen, destino }) {
         </div>
       )}
 
-      {!cargandoParadas && errorParadas && (
+      {!cargandoParadasTrip && errorParadasTrip && (
         <div className="mapa-ruta__estado mapa-ruta__estado--error">
-          {errorParadas}
+          {errorParadasTrip}
         </div>
       )}
 
@@ -533,17 +519,25 @@ function MapaRuta({ ruta, origen, destino }) {
           />
         )}
 
-        {paradasCercanas.map((parada) => (
+        {paradasIntermedias.map((parada, indice) => (
           <Marker
-            key={`parada-cercana-${parada.zona}-${parada.id}-${parada.stopId}-${parada.lat}-${parada.lon}`}
+            key={`parada-intermedia-${parada.stopId}-${parada.orden}-${indice}`}
             position={[parada.lat, parada.lon]}
-            icon={crearIconoParadaCercana(parada.zona)}
+            icon={crearIconoParadaRecorrido('intermedia')}
           >
             <Popup>
-              <PopupParadaInfoBus
-                parada={parada}
-                zona={parada.zona === 'origen' ? 'cerca del origen' : 'cerca del destino'}
-              />
+              <div className="popup-parada">
+                <strong>{parada.nombre}</strong>
+                <span>Parada intermedia</span>
+                <span>
+                  Parada {indice + 1} de {paradasIntermedias.length}
+                </span>
+                {parada.horaSalida && (
+                  <span>
+                    Hora aproximada: {parada.horaSalida}
+                  </span>
+                )}
+              </div>
             </Popup>
           </Marker>
         ))}
@@ -559,10 +553,12 @@ function MapaRuta({ ruta, origen, destino }) {
         {paradaOrigen && (
           <Marker position={paradaOrigen} icon={crearIconoMapa('parada')}>
             <Popup>
-              <PopupParadaInfoBus
-                parada={paradaOrigenPopup}
-                zona="parada elegida para subir"
-              />
+              <div className="popup-parada">
+                <strong>{ruta?.paradaOrigen?.nombre || 'Parada de subida'}</strong>
+                <span>Parada donde subes</span>
+                <span>ID InfoBus: {ruta?.paradaOrigen?.id || 'Sin id'}</span>
+                <span>GTFS stop_id: {stopOrigen || 'Sin stop_id'}</span>
+              </div>
             </Popup>
           </Marker>
         )}
@@ -570,10 +566,12 @@ function MapaRuta({ ruta, origen, destino }) {
         {paradaDestino && (
           <Marker position={paradaDestino} icon={crearIconoMapa('parada')}>
             <Popup>
-              <PopupParadaInfoBus
-                parada={paradaDestinoPopup}
-                zona="parada elegida para bajar"
-              />
+              <div className="popup-parada">
+                <strong>{ruta?.paradaDestino?.nombre || 'Parada de bajada'}</strong>
+                <span>Parada donde bajas</span>
+                <span>ID InfoBus: {ruta?.paradaDestino?.id || 'Sin id'}</span>
+                <span>GTFS stop_id: {stopDestino || 'Sin stop_id'}</span>
+              </div>
             </Popup>
           </Marker>
         )}
