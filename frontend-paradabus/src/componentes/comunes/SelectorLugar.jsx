@@ -7,96 +7,7 @@ import {
   X
 } from 'lucide-react';
 
-const LUGARES_VIGO = [
-  {
-    id: 'plaza-america',
-    nombre: 'Plaza América',
-    descripcion: 'Zona Coia / Traviesas',
-    lat: 42.22083,
-    lon: -8.73544,
-    tipo: 'lugar'
-  },
-  {
-    id: 'samil',
-    nombre: 'Playa de Samil',
-    descripcion: 'Playa / paseo de Samil',
-    lat: 42.21103,
-    lon: -8.77434,
-    tipo: 'lugar'
-  },
-  {
-    id: 'balaidos',
-    nombre: 'Estadio de Balaídos',
-    descripcion: 'Estadio / zona Fragoso',
-    lat: 42.2119,
-    lon: -8.7397,
-    tipo: 'lugar'
-  },
-  {
-    id: 'vialia',
-    nombre: 'Vialia Vigo',
-    descripcion: 'Estación de tren / centro comercial',
-    lat: 42.23476,
-    lon: -8.71381,
-    tipo: 'lugar'
-  },
-  {
-    id: 'hospital-alvaro-cunqueiro',
-    nombre: 'Hospital Álvaro Cunqueiro',
-    descripcion: 'Hospital HAC',
-    lat: 42.22364,
-    lon: -8.74675,
-    tipo: 'lugar'
-  },
-  {
-    id: 'gran-via',
-    nombre: 'Centro Comercial Gran Vía',
-    descripcion: 'Avda. Gran Vía',
-    lat: 42.22442,
-    lon: -8.7281,
-    tipo: 'lugar'
-  },
-  {
-    id: 'puerta-sol',
-    nombre: 'Porta do Sol',
-    descripcion: 'Centro de Vigo',
-    lat: 42.23716,
-    lon: -8.72669,
-    tipo: 'lugar'
-  },
-  {
-    id: 'praza-espana',
-    nombre: 'Plaza de España',
-    descripcion: 'Centro / Gran Vía',
-    lat: 42.22949,
-    lon: -8.7228,
-    tipo: 'lugar'
-  },
-  {
-    id: 'avenida-europa',
-    nombre: 'Avenida de Europa',
-    descripcion: 'Zona Coia / Alcabre',
-    lat: 42.22025,
-    lon: -8.75961,
-    tipo: 'lugar'
-  },
-  {
-    id: 'universidad-vigo',
-    nombre: 'Universidade de Vigo',
-    descripcion: 'Campus universitario',
-    lat: 42.16986,
-    lon: -8.68697,
-    tipo: 'lugar'
-  }
-];
-
-function normalizarTexto(texto) {
-  return texto
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim();
-}
+import { buscarLugaresPorTexto } from '../../servicios/lugaresServicio';
 
 function obtenerHistorial(claveHistorial) {
   try {
@@ -115,11 +26,19 @@ function obtenerHistorial(claveHistorial) {
 }
 
 function guardarEnHistorial(claveHistorial, lugar) {
+  if (!lugar) {
+    return;
+  }
+
   const historialActual = obtenerHistorial(claveHistorial);
 
-  const historialSinRepetidos = historialActual.filter(
-    (item) => item.id !== lugar.id
-  );
+  const historialSinRepetidos = historialActual.filter((item) => {
+    const mismoNombre = item.nombre === lugar.nombre;
+    const mismaLat = Number(item.lat) === Number(lugar.lat);
+    const mismaLon = Number(item.lon) === Number(lugar.lon);
+
+    return !(mismoNombre && mismaLat && mismaLon);
+  });
 
   const nuevoHistorial = [
     lugar,
@@ -129,22 +48,16 @@ function guardarEnHistorial(claveHistorial, lugar) {
   localStorage.setItem(claveHistorial, JSON.stringify(nuevoHistorial));
 }
 
-function filtrarLugares(texto) {
-  const textoNormalizado = normalizarTexto(texto);
-
-  if (!textoNormalizado) {
-    return LUGARES_VIGO.slice(0, 6);
-  }
-
-  return LUGARES_VIGO.filter((lugar) => {
-    const nombre = normalizarTexto(lugar.nombre);
-    const descripcion = normalizarTexto(lugar.descripcion);
-
-    return (
-      nombre.includes(textoNormalizado) ||
-      descripcion.includes(textoNormalizado)
-    );
-  }).slice(0, 8);
+function normalizarLugarBackend(lugar, indice) {
+  return {
+    id: `${lugar.fuente || 'backend'}-${lugar.lat}-${lugar.lon}-${indice}`,
+    nombre: lugar.nombre,
+    descripcion: lugar.direccion,
+    lat: lugar.lat,
+    lon: lugar.lon,
+    tipo: 'lugar',
+    fuente: lugar.fuente || 'backend'
+  };
 }
 
 function SelectorLugar({
@@ -154,15 +67,29 @@ function SelectorLugar({
   tipo = 'destino',
   onSeleccionar,
   onUsarUbicacionActual,
-  onElegirEnMapa
+  onElegirEnMapa,
+  onTextoCambiado
 }) {
   const contenedorRef = useRef(null);
+  const timeoutBusquedaRef = useRef(null);
 
   const [texto, setTexto] = useState(valor?.nombre || '');
   const [abierto, setAbierto] = useState(false);
   const [historial, setHistorial] = useState([]);
+  const [sugerencias, setSugerencias] = useState([]);
+  const [buscandoSugerencias, setBuscandoSugerencias] = useState(false);
+  const [errorBusqueda, setErrorBusqueda] = useState('');
 
   const claveHistorial = `paradabus_historial_${tipo}`;
+  const textoLimpio = texto.trim();
+
+  const mostrarHistorial = useMemo(() => {
+    return historial.length > 0 && !textoLimpio;
+  }, [historial, textoLimpio]);
+
+  const mostrarSugerencias = useMemo(() => {
+    return textoLimpio.length >= 2;
+  }, [textoLimpio]);
 
   useEffect(() => {
     setTexto(valor?.nombre || '');
@@ -190,18 +117,64 @@ function SelectorLugar({
     };
   }, []);
 
-  const sugerencias = useMemo(() => {
-    return filtrarLugares(texto);
-  }, [texto]);
+  useEffect(() => {
+    setErrorBusqueda('');
+    setSugerencias([]);
+
+    if (timeoutBusquedaRef.current) {
+      clearTimeout(timeoutBusquedaRef.current);
+    }
+
+    if (!mostrarSugerencias) {
+      setBuscandoSugerencias(false);
+      return;
+    }
+
+    timeoutBusquedaRef.current = setTimeout(async () => {
+      try {
+        setBuscandoSugerencias(true);
+
+        const respuesta = await buscarLugaresPorTexto(textoLimpio);
+
+        const lugaresNormalizados = respuesta.map((lugar, indice) =>
+          normalizarLugarBackend(lugar, indice)
+        );
+
+        setSugerencias(lugaresNormalizados);
+      } catch {
+        setErrorBusqueda('No se pudieron cargar sugerencias.');
+      } finally {
+        setBuscandoSugerencias(false);
+      }
+    }, 350);
+
+    return () => {
+      if (timeoutBusquedaRef.current) {
+        clearTimeout(timeoutBusquedaRef.current);
+      }
+    };
+  }, [textoLimpio, mostrarSugerencias]);
 
   function cambiarTexto(evento) {
-    setTexto(evento.target.value);
+    const nuevoTexto = evento.target.value;
+
+    setTexto(nuevoTexto);
     setAbierto(true);
+    setErrorBusqueda('');
+
+    if (onTextoCambiado) {
+      onTextoCambiado(nuevoTexto);
+    }
+
+    if (valor) {
+      onSeleccionar(null);
+    }
   }
 
   function seleccionarLugar(lugar) {
     setTexto(lugar.nombre);
     setAbierto(false);
+    setErrorBusqueda('');
 
     guardarEnHistorial(claveHistorial, lugar);
     setHistorial(obtenerHistorial(claveHistorial));
@@ -211,7 +184,14 @@ function SelectorLugar({
 
   function limpiarLugar() {
     setTexto('');
+    setSugerencias([]);
+    setErrorBusqueda('');
     setAbierto(true);
+
+    if (onTextoCambiado) {
+      onTextoCambiado('');
+    }
+
     onSeleccionar(null);
   }
 
@@ -230,8 +210,6 @@ function SelectorLugar({
       onElegirEnMapa();
     }
   }
-
-  const mostrarHistorial = historial.length > 0 && !texto.trim();
 
   return (
     <div className="selector-lugar" ref={contenedorRef}>
@@ -302,9 +280,9 @@ function SelectorLugar({
                 Búsquedas recientes
               </p>
 
-              {historial.map((lugar) => (
+              {historial.map((lugar, indice) => (
                 <button
-                  key={`historial-${lugar.id}`}
+                  key={`historial-${lugar.id || indice}`}
                   type="button"
                   className="selector-lugar__opcion"
                   onClick={() => seleccionarLugar(lugar)}
@@ -322,33 +300,55 @@ function SelectorLugar({
             </>
           )}
 
-          <p className="selector-lugar__titulo-lista">
-            Sugerencias
-          </p>
+          {mostrarSugerencias && (
+            <>
+              <p className="selector-lugar__titulo-lista">
+                Sugerencias
+              </p>
 
-          {sugerencias.length === 0 && (
-            <p className="selector-lugar__sin-resultados">
-              No encontramos ese lugar todavía.
-            </p>
+              {buscandoSugerencias && (
+                <p className="selector-lugar__sin-resultados">
+                  Buscando lugares...
+                </p>
+              )}
+
+              {!buscandoSugerencias && errorBusqueda && (
+                <p className="selector-lugar__sin-resultados">
+                  {errorBusqueda}
+                </p>
+              )}
+
+              {!buscandoSugerencias && !errorBusqueda && sugerencias.length === 0 && (
+                <p className="selector-lugar__sin-resultados">
+                  No encontramos sugerencias. Puedes escribir el lugar y buscar igualmente.
+                </p>
+              )}
+
+              {!buscandoSugerencias && sugerencias.map((lugar) => (
+                <button
+                  key={lugar.id}
+                  type="button"
+                  className="selector-lugar__opcion"
+                  onClick={() => seleccionarLugar(lugar)}
+                >
+                  <span className="selector-lugar__icono">
+                    <MapPin size={18} />
+                  </span>
+
+                  <span>
+                    <strong>{lugar.nombre}</strong>
+                    <small>{lugar.descripcion}</small>
+                  </span>
+                </button>
+              ))}
+            </>
           )}
 
-          {sugerencias.map((lugar) => (
-            <button
-              key={lugar.id}
-              type="button"
-              className="selector-lugar__opcion"
-              onClick={() => seleccionarLugar(lugar)}
-            >
-              <span className="selector-lugar__icono">
-                <MapPin size={18} />
-              </span>
-
-              <span>
-                <strong>{lugar.nombre}</strong>
-                <small>{lugar.descripcion}</small>
-              </span>
-            </button>
-          ))}
+          {!mostrarHistorial && !mostrarSugerencias && tipo !== 'origen' && (
+            <p className="selector-lugar__sin-resultados">
+              Escribe para buscar un lugar o elige un punto en el mapa.
+            </p>
+          )}
         </div>
       )}
     </div>
