@@ -65,10 +65,12 @@ function SelectorLugar({
   placeholder,
   valor,
   tipo = 'destino',
+  lugaresGuardados = {},
   onSeleccionar,
   onUsarUbicacionActual,
   onElegirEnMapa,
-  onTextoCambiado
+  onTextoCambiado,
+  onGuardarLugarGuardado
 }) {
   const contenedorRef = useRef(null);
   const timeoutBusquedaRef = useRef(null);
@@ -90,6 +92,21 @@ function SelectorLugar({
   const mostrarSugerencias = useMemo(() => {
     return textoLimpio.length >= 2;
   }, [textoLimpio]);
+
+  const lugaresRapidos = useMemo(() => {
+    return [
+      {
+        id: 'casa',
+        etiqueta: 'Casa',
+        lugar: lugaresGuardados?.casa || null
+      },
+      {
+        id: 'trabajo',
+        etiqueta: 'Trabajo',
+        lugar: lugaresGuardados?.trabajo || null
+      }
+    ].filter((item) => item.lugar);
+  }, [lugaresGuardados]);
 
   useEffect(() => {
     setTexto(valor?.nombre || '');
@@ -295,8 +312,54 @@ function SelectorLugar({
         )}
       </div>
 
+      {valor && onGuardarLugarGuardado && (
+        <div className="selector-lugar__guardado">
+          <button
+            type="button"
+            className="selector-lugar__guardar"
+            onClick={() => onGuardarLugarGuardado('casa', valor)}
+          >
+            Guardar como Casa
+          </button>
+
+          <button
+            type="button"
+            className="selector-lugar__guardar"
+            onClick={() => onGuardarLugarGuardado('trabajo', valor)}
+          >
+            Guardar como Trabajo
+          </button>
+        </div>
+      )}
+
       {abierto && (
         <div className="selector-lugar__desplegable">
+          {lugaresRapidos.length > 0 && (
+            <>
+              <p className="selector-lugar__titulo-lista">
+                Guardados
+              </p>
+
+              {lugaresRapidos.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="selector-lugar__opcion selector-lugar__opcion--accion"
+                  onClick={() => seleccionarLugar(item.lugar)}
+                >
+                  <span className="selector-lugar__icono">
+                    <MapPin size={18} />
+                  </span>
+
+                  <span>
+                    <strong>{item.etiqueta}</strong>
+                    <small>{item.lugar?.nombre || item.lugar?.direccion}</small>
+                  </span>
+                </button>
+              ))}
+            </>
+          )}
+
           {tipo === 'origen' && (
             <button
               type="button"

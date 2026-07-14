@@ -14,7 +14,21 @@ self.addEventListener('push', (event) => {
     icon: '/favicon.svg',
     badge: '/favicon.svg',
     tag: datos.tag || 'paradabus-trayecto',
-    data: datos.data || {}
+    data: datos.data || {},
+    renotify: datos.renotify !== false,
+    requireInteraction: Boolean(datos.requireInteraction),
+    actions: Array.isArray(datos.actions) && datos.actions.length > 0
+      ? datos.actions
+      : [
+        {
+          action: 'abrir-trayecto',
+          title: 'Abrir trayecto'
+        },
+        {
+          action: 'finalizar-trayecto',
+          title: 'Finalizar'
+        }
+      ]
   };
 
   event.waitUntil(self.registration.showNotification(titulo, opciones));

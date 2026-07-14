@@ -18,15 +18,26 @@ import {
 } from 'lucide-react';
 
 import SelectorLugar from '../componentes/comunes/SelectorLugar';
+import MapaLugarModal from '../componentes/comunes/MapaLugarModal';
 import MapaRuta from '../componentes/mapa/MapaRuta';
 import {
   buscarRutas
 } from '../servicios/rutasServicio';
 import {
+  eliminarLugarGuardado,
+  guardarLugarGuardado,
+  obtenerLugaresGuardados
+} from '../servicios/lugaresGuardadosServicio';
+import {
+  asegurarSuscripcionPush,
+  cancelarAvisosTrayectoPush,
   cerrarNotificacionesTrayecto,
+  enviarPruebaPush,
   mostrarNotificacionTrayecto,
   obtenerPermisoNotificaciones,
-  pedirPermisoNotificaciones
+  pedirPermisoNotificaciones,
+  programarAvisosTrayectoPush,
+  sincronizarSuscripcionPush
 } from '../servicios/notificacionesServicio';
 import {
   prepararTrayectoActivo,
@@ -143,6 +154,28 @@ function formatearMetros(metros) {
   }
 
   return `${Math.round(metros)} m`;
+}
+
+function convertirHoraTextoASegundos(horaTexto) {
+  if (!horaTexto) {
+    return null;
+  }
+
+  const partes = String(horaTexto).split(':');
+
+  if (partes.length < 2) {
+    return null;
+  }
+
+  const horas = Number(partes[0]);
+  const minutos = Number(partes[1]);
+  const segundos = Number(partes[2] || 0);
+
+  if (!Number.isFinite(horas) || !Number.isFinite(minutos) || !Number.isFinite(segundos)) {
+    return null;
+  }
+
+  return (horas * 3600) + (minutos * 60) + segundos;
 }
 
 function obtenerSegmentoActivo(trayectoActivo) {
@@ -365,7 +398,8 @@ function PanelTrayectoActivo({
   permisoNotificaciones,
   onActivarAvisos,
   onFinalizar,
-  onAbrirRuta
+  onAbrirRuta,
+  onProbarAviso
 }) {
   if (!trayectoActivo) {
     return null;
@@ -452,6 +486,15 @@ function PanelTrayectoActivo({
             Activar avisos
           </button>
         )}
+
+        <button
+          type="button"
+          className="boton-ubicacion-ruta"
+          onClick={onProbarAviso}
+        >
+          <Bell size={17} />
+          Probar aviso
+        </button>
 
         <button
           type="button"
@@ -653,6 +696,11 @@ function InicioPagina() {
   const [preparandoTrayecto, setPreparandoTrayecto] = useState(false);
   const [error, setError] = useState('');
   const [permisoNotificaciones, setPermisoNotificaciones] = useState(obtenerPermisoNotificaciones());
+  const [lugaresGuardados, setLugaresGuardados] = useState(() => obtenerLugaresGuardados());
+  const [selectorMapa, setSelectorMapa] = useState({
+    abierto: false,
+    tipo: null
+  });
 
   const panelTrayectoRef = useRef(null);
   const watchUbicacionRef = useRef(null);
@@ -766,8 +814,42 @@ function InicioPagina() {
     );
   }
 
-  function elegirEnMapaTemporal() {
-    setError('La seleccion manual en mapa queda preparada para el siguiente bloque del frontend.');
+  function abrirSelectorMapa(tipo) {
+    setSelectorMapa({
+      abierto: true,
+      tipo
+    });
+  }
+
+  function cerrarSelectorMapa() {
+    setSelectorMapa({
+      abierto: false,
+      tipo: null
+    });
+  }
+
+  function confirmarLugarDesdeMapa(lugar) {
+    if (selectorMapa.tipo === 'origen') {
+      manejarSeleccionOrigen(lugar);
+    } else if (selectorMapa.tipo === 'destino') {
+      manejarSeleccionDestino(lugar);
+    }
+
+    cerrarSelectorMapa();
+  }
+
+  function guardarLugarFavorito(clave, lugar) {
+    if (!lugar) {
+      return;
+    }
+
+    const actualizados = guardarLugarGuardado(clave, lugar);
+    setLugaresGuardados(actualizados);
+  }
+
+  function eliminarFavorito(clave) {
+    const actualizados = eliminarLugarGuardado(clave);
+    setLugaresGuardados(actualizados);
   }
 
   function intercambiarOrigenDestino() {
@@ -819,12 +901,49 @@ function InicioPagina() {
   }
 
   async function activarAvisosTrayecto() {
-    const permiso = await pedirPermisoNotificaciones();
-    setPermisoNotificaciones(permiso);
+    try {
+      const permiso = await pedirPermisoNotificaciones();
+      setPermisoNotificaciones(permiso);
 
-    if (permiso !== 'granted') {
-      setError('No se pudieron activar las notificaciones del navegador.');
+      if (permiso !== 'granted') {
+        setError('No se pudieron activar las notificaciones del navegador.');
+        return;
+      }
+
+      await asegurarSuscripcionPush();
+    } catch {
+      setError('No se pudo dejar preparada la suscripcion push.');
     }
+  }
+
+  async function probarNotificacion() {
+    try {
+      const permiso = await pedirPermisoNotificaciones();
+      setPermisoNotificaciones(permiso);
+
+      if (permiso !== 'granted') {
+        setError('No se pudieron activar las notificaciones para la prueba.');
+        return;
+      }
+
+      const enviadaPorPush = await enviarPruebaPush();
+
+      if (enviadaPorPush) {
+        return;
+      }
+    } catch {
+      // Si falla la parte push, hacemos fallback a la notificacion local.
+    }
+
+    await mostrarNotificacionTrayecto({
+      titulo: 'Prueba de aviso',
+      cuerpo: 'Tu bus llega pronto. Ve acercandote a la parada para no perderlo.',
+      tag: 'paradabus-prueba-aviso',
+      requireInteraction: true,
+      datos: {
+        prueba: true
+      }
+    });
   }
 
   async function iniciarTrayecto(ruta) {
@@ -840,15 +959,25 @@ function InicioPagina() {
         preparado,
         trayectoActivo?.ultimaUbicacionUsuario || null
       );
+      let pushProgramado = false;
 
-      setTrayectoActivo(recalculado);
+      if (permiso === 'granted') {
+        pushProgramado = await programarAvisosTrayectoPush(recalculado);
+      }
+
+      const trayectoPreparado = {
+        ...recalculado,
+        pushProgramado
+      };
+
+      setTrayectoActivo(trayectoPreparado);
 
       await mostrarNotificacionTrayecto({
         titulo: 'Trayecto iniciado',
-        cuerpo: `Seguimiento activo hacia ${recalculado.destinoFinal}.`,
-        tag: `paradabus-trayecto-${recalculado.id}`,
+        cuerpo: `Seguimiento activo hacia ${trayectoPreparado.destinoFinal}.`,
+        tag: `paradabus-trayecto-${trayectoPreparado.id}`,
         datos: {
-          trayectoId: recalculado.id
+          trayectoId: trayectoPreparado.id
         }
       });
     } catch (errorTrayecto) {
@@ -858,10 +987,20 @@ function InicioPagina() {
     }
   }
 
-  async function finalizarTrayecto() {
+  async function finalizarTrayecto(trayectoIdManual = null) {
+    const trayectoId = trayectoIdManual || trayectoActivo?.id;
+
     if (watchUbicacionRef.current !== null && navigator.geolocation) {
       navigator.geolocation.clearWatch(watchUbicacionRef.current);
       watchUbicacionRef.current = null;
+    }
+
+    if (trayectoId) {
+      try {
+        await cancelarAvisosTrayectoPush(trayectoId);
+      } catch {
+        // Si el backend no responde, igualmente cerramos el trayecto local.
+      }
     }
 
     await cerrarNotificacionesTrayecto();
@@ -885,14 +1024,51 @@ function InicioPagina() {
     const accionUrl = new URLSearchParams(window.location.search).get('trayectoAccion');
 
     if (accionUrl === 'finalizar-trayecto') {
-      finalizarTrayecto();
+      finalizarTrayecto(trayectoGuardado?.id);
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
 
   useEffect(() => {
+    if (obtenerPermisoNotificaciones() !== 'granted') {
+      return;
+    }
+
+    sincronizarSuscripcionPush().catch(() => {
+      // Si falla la sincronizacion push, mantenemos las notificaciones locales.
+    });
+  }, []);
+
+  useEffect(() => {
     guardarTrayectoActivoEnLocal(trayectoActivo);
   }, [trayectoActivo]);
+
+  useEffect(() => {
+    if (!trayectoActivo?.id || trayectoActivo.finalizado || permisoNotificaciones !== 'granted') {
+      return;
+    }
+
+    programarAvisosTrayectoPush(trayectoActivo)
+      .then((programado) => {
+        if (!programado) {
+          return;
+        }
+
+        setTrayectoActivo((actual) => {
+          if (!actual || actual.id !== trayectoActivo.id || actual.pushProgramado) {
+            return actual;
+          }
+
+          return {
+            ...actual,
+            pushProgramado: true
+          };
+        });
+      })
+      .catch(() => {
+        // Si no se puede programar en backend, seguimos con avisos locales.
+      });
+  }, [permisoNotificaciones, trayectoActivo?.finalizado, trayectoActivo?.id]);
 
   useEffect(() => {
     if (!trayectoActivo || trayectoActivo.finalizado) {
@@ -970,6 +1146,10 @@ function InicioPagina() {
       return;
     }
 
+    if (trayectoActivo.pushProgramado) {
+      return;
+    }
+
     const estado = trayectoActivo.estadoActual;
     const segmentoActivo = obtenerSegmentoActivo(trayectoActivo);
 
@@ -999,6 +1179,41 @@ function InicioPagina() {
     }
 
     if (!estado.avisoSiguienteParada) {
+      const segundosSalida = convertirHoraTextoASegundos(segmentoActivo?.horaSalidaBus);
+      const ahora = new Date();
+      const segundosActuales = (ahora.getHours() * 3600) + (ahora.getMinutes() * 60) + ahora.getSeconds();
+
+      if (segundosSalida !== null) {
+        let segundosSalidaAjustados = segundosSalida;
+
+        while (segundosSalidaAjustados < segundosActuales) {
+          segundosSalidaAjustados += 24 * 3600;
+        }
+
+        const diferencia = segundosSalidaAjustados - segundosActuales;
+        const claveSubida = `subida-${trayectoActivo.id}-${trayectoActivo.segmentoActivoIndex}`;
+
+        if (diferencia >= 0 && diferencia <= 180 && !trayectoActivo.alertasEmitidas?.includes(claveSubida)) {
+          setTrayectoActivo((actual) => ({
+            ...actual,
+            alertasEmitidas: [
+              ...(actual.alertasEmitidas || []),
+              claveSubida
+            ]
+          }));
+
+          mostrarNotificacionTrayecto({
+            titulo: 'Tu bus llega pronto',
+            cuerpo: `La linea ${segmentoActivo?.linea || 'BUS'} sale en unos minutos. Acercate a la parada.`,
+            tag: `paradabus-trayecto-${trayectoActivo.id}`,
+            requireInteraction: true,
+            datos: {
+              trayectoId: trayectoActivo.id
+            }
+          });
+        }
+      }
+
       return;
     }
 
@@ -1112,10 +1327,12 @@ function InicioPagina() {
                 placeholder="Origen o ubicacion actual"
                 valor={origenSeleccionado}
                 tipo="origen"
+                lugaresGuardados={lugaresGuardados}
                 onSeleccionar={manejarSeleccionOrigen}
                 onUsarUbicacionActual={usarUbicacionActual}
-                onElegirEnMapa={elegirEnMapaTemporal}
+                onElegirEnMapa={() => abrirSelectorMapa('origen')}
                 onTextoCambiado={limpiarRutas}
+                onGuardarLugarGuardado={guardarLugarFavorito}
               />
 
               <div className="buscador-ruta-app__swap">
@@ -1135,12 +1352,48 @@ function InicioPagina() {
                 placeholder="A donde vas"
                 valor={destinoSeleccionado}
                 tipo="destino"
+                lugaresGuardados={lugaresGuardados}
                 onSeleccionar={manejarSeleccionDestino}
-                onElegirEnMapa={elegirEnMapaTemporal}
+                onElegirEnMapa={() => abrirSelectorMapa('destino')}
                 onTextoCambiado={limpiarRutas}
+                onGuardarLugarGuardado={guardarLugarFavorito}
               />
             </div>
           </div>
+
+          {(lugaresGuardados.casa || lugaresGuardados.trabajo) && (
+            <div className="buscador-ruta-app__guardados">
+              {lugaresGuardados.casa && (
+                <article className="buscador-ruta-app__guardado-card">
+                  <div>
+                    <strong>Casa</strong>
+                    <span>{lugaresGuardados.casa.nombre || lugaresGuardados.casa.direccion}</span>
+                  </div>
+
+                  <div className="buscador-ruta-app__guardado-acciones">
+                    <button type="button" onClick={() => manejarSeleccionOrigen(lugaresGuardados.casa)}>Origen</button>
+                    <button type="button" onClick={() => manejarSeleccionDestino(lugaresGuardados.casa)}>Destino</button>
+                    <button type="button" onClick={() => eliminarFavorito('casa')}>Quitar</button>
+                  </div>
+                </article>
+              )}
+
+              {lugaresGuardados.trabajo && (
+                <article className="buscador-ruta-app__guardado-card">
+                  <div>
+                    <strong>Trabajo</strong>
+                    <span>{lugaresGuardados.trabajo.nombre || lugaresGuardados.trabajo.direccion}</span>
+                  </div>
+
+                  <div className="buscador-ruta-app__guardado-acciones">
+                    <button type="button" onClick={() => manejarSeleccionOrigen(lugaresGuardados.trabajo)}>Origen</button>
+                    <button type="button" onClick={() => manejarSeleccionDestino(lugaresGuardados.trabajo)}>Destino</button>
+                    <button type="button" onClick={() => eliminarFavorito('trabajo')}>Quitar</button>
+                  </div>
+                </article>
+              )}
+            </div>
+          )}
 
           <div className="buscador-ruta-app__acciones">
             <button
@@ -1166,6 +1419,15 @@ function InicioPagina() {
               )}
 
               Buscar ruta
+            </button>
+
+            <button
+              type="button"
+              className="boton-ubicacion-ruta"
+              onClick={probarNotificacion}
+            >
+              <Bell size={17} />
+              Probar aviso
             </button>
           </div>
 
@@ -1210,6 +1472,7 @@ function InicioPagina() {
             onActivarAvisos={activarAvisosTrayecto}
             onFinalizar={finalizarTrayecto}
             onAbrirRuta={abrirRutaDesdeTrayecto}
+            onProbarAviso={probarNotificacion}
           />
         </div>
 
@@ -1225,7 +1488,7 @@ function InicioPagina() {
               </h2>
 
               <p className="resultados-rutas-app__texto">
-                Directas primero. Si hace falta, la app ya puede sacar transbordos sin cargarlo todo siempre.
+                La busqueda normal ahora prioriza velocidad con rutas directas. Los transbordos se cargan solo si los pides.
               </p>
             </div>
 
@@ -1245,10 +1508,10 @@ function InicioPagina() {
             </div>
           </div>
 
-          {!resultadoBusqueda.transbordosConsultados && resultadoBusqueda.totalDirectas > 0 && (
+          {!resultadoBusqueda.transbordosConsultados && resultadoBusqueda.mensaje && (
             <div className="resultados-rutas-app__aviso">
               <span>
-                Busqueda rapida activa: se han mostrado primero las directas.
+                {resultadoBusqueda.mensaje}
               </span>
 
               <button
@@ -1257,7 +1520,7 @@ function InicioPagina() {
                 onClick={() => buscarOpcionesRuta({ forzarTransbordos: true })}
                 disabled={cargando}
               >
-                Ver tambien transbordos
+                Buscar con transbordos
               </button>
             </div>
           )}
@@ -1305,6 +1568,19 @@ function InicioPagina() {
           La interfaz ya tiene base para directas, transbordos, trayecto activo, aviso antes de bajar y notificaciones sobre HTTPS.
         </div>
       </div>
+
+      {selectorMapa.abierto && (
+        <MapaLugarModal
+          tipo={selectorMapa.tipo}
+          valorInicial={selectorMapa.tipo === 'origen' ? origenSeleccionado : destinoSeleccionado}
+          onCerrar={cerrarSelectorMapa}
+          onConfirmar={confirmarLugarDesdeMapa}
+          onUsarMiUbicacion={() => {
+            usarUbicacionActual();
+            cerrarSelectorMapa();
+          }}
+        />
+      )}
     </section>
   );
 }

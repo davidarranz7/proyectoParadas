@@ -1,6 +1,6 @@
 @media (min-width: 640px) {
   .buscador-ruta-app__acciones {
-    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .buscador-ruta-app__metricas {

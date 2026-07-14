@@ -27,6 +27,9 @@ public class RutaBusquedaServicio {
     @Value("${paradabus.rutas.busqueda.max-resultados-transbordo:4}")
     private Integer maxResultadosTransbordo;
 
+    @Value("${paradabus.rutas.busqueda.consultar-transbordos-automaticamente:false}")
+    private Boolean consultarTransbordosAutomaticamente;
+
     public RutaBusquedaResultadoDTO buscarRutas(
             Double origenLat,
             Double origenLon,
@@ -88,6 +91,10 @@ public class RutaBusquedaServicio {
     ) {
         if (Boolean.TRUE.equals(forzarTransbordos)) {
             return true;
+        }
+
+        if (!Boolean.TRUE.equals(consultarTransbordosAutomaticamente)) {
+            return false;
         }
 
         List<RutaDirectaOpcionDTO> opciones = directas.opciones();
