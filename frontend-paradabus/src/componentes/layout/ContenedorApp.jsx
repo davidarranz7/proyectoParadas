@@ -1,5 +1,6 @@
 import {
   BusFront,
+  Clock3,
   Map,
   MapPinned,
   Route,
@@ -24,7 +25,7 @@ const opcionesMenu = [
   },
   {
     id: 'lineas',
-    texto: 'Líneas',
+    texto: 'Lineas',
     subtitulo: 'Recorridos',
     icono: MapPinned
   },
@@ -38,11 +39,11 @@ const opcionesMenu = [
 
 function obtenerTituloPagina(paginaActiva) {
   if (paginaActiva === 'mapa') {
-    return 'Mapa';
+    return 'Explorar';
   }
 
   if (paginaActiva === 'lineas') {
-    return 'Líneas';
+    return 'Lineas';
   }
 
   if (paginaActiva === 'ajustes') {
@@ -67,11 +68,25 @@ function ContenedorApp({ children, paginaActiva, onCambiarPagina }) {
 
           <div>
             <p className="marca-app__titulo">ParadaBus</p>
-            <p className="marca-app__subtitulo">Vigo en bus</p>
+            <p className="marca-app__subtitulo">Movilidad urbana en Vigo</p>
           </div>
         </div>
 
-        <nav className="menu-lateral" aria-label="Navegación principal">
+        <section className="panel-lateral__hero">
+          <p className="panel-lateral__hero-etiqueta">Modo viaje</p>
+          <strong>Una interfaz mas parecida a una app de transporte real.</strong>
+          <span>
+            Busqueda rapida, panel de seguimiento y tiempos en vivo en el mismo flujo.
+          </span>
+
+          <div className="panel-lateral__hero-pildoras">
+            <span>Movil primero</span>
+            <span>Tiempo real</span>
+            <span>Tablet y desktop</span>
+          </div>
+        </section>
+
+        <nav className="menu-lateral" aria-label="Navegacion principal">
           {opcionesMenu.map((opcion) => {
             const Icono = opcion.icono;
             const activo = paginaActiva === opcion.id;
@@ -107,7 +122,18 @@ function ContenedorApp({ children, paginaActiva, onCambiarPagina }) {
 
           <div>
             <p>InfoBus activo</p>
-            <span>Datos en tiempo real</span>
+            <span>Panel listo para tiempos en tiempo real</span>
+          </div>
+        </div>
+
+        <div className="panel-lateral__tarjeta">
+          <div className="panel-lateral__tarjeta-icono">
+            <Clock3 size={16} />
+          </div>
+
+          <div>
+            <p>Ruta en 3 pasos</p>
+            <span>Busca, compara y sigue el trayecto sin salir de pantalla.</span>
           </div>
         </div>
       </aside>
@@ -124,9 +150,15 @@ function ContenedorApp({ children, paginaActiva, onCambiarPagina }) {
           </div>
         </div>
 
-        <div className="barra-superior-movil__estado">
-          <span className="barra-superior-movil__punto" />
-          Vigo
+        <div className="barra-superior-movil__bloque">
+          <div className="barra-superior-movil__estado">
+            <span className="barra-superior-movil__punto" />
+            En vivo
+          </div>
+
+          <div className="barra-superior-movil__ciudad">
+            Vigo
+          </div>
         </div>
       </header>
 

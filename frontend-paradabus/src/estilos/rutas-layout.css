@@ -1,13 +1,11 @@
-/* =========================================================
-   PANTALLA RUTAS - ESTRUCTURA GENERAL
-   ========================================================= */
-
 .pagina-rutas-app {
   position: relative;
-  min-height: calc(100vh - 48px);
+  min-height: calc(100vh - 122px);
   overflow: hidden;
-  border-radius: 30px;
-  background: #eef3f8;
+  border-radius: 32px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.3)),
+    #f1f5f8;
   isolation: isolate;
 }
 
@@ -17,125 +15,104 @@
   z-index: -2;
   overflow: hidden;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(232, 242, 255, 0.5)),
-    #eef3f8;
+    radial-gradient(circle at 10% 10%, rgba(255, 107, 61, 0.22), transparent 18%),
+    radial-gradient(circle at 92% 14%, rgba(22, 56, 77, 0.14), transparent 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(233, 241, 247, 0.92));
 }
 
 .rutas-fondo-mapa::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 24% 18%, rgba(9, 105, 218, 0.14), transparent 18%),
-    radial-gradient(circle at 80% 28%, rgba(22, 163, 74, 0.12), transparent 20%),
-    linear-gradient(180deg, transparent 0%, rgba(251, 249, 246, 0.55) 72%, rgba(251, 249, 246, 0.92) 100%);
+    linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.34) 55%, rgba(255, 255, 255, 0.84) 100%);
 }
 
 .rutas-fondo-mapa__grid {
   position: absolute;
-  inset: -60px;
-  opacity: 0.5;
+  inset: -80px;
+  opacity: 0.46;
   background-image:
-    linear-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
-  background-size: 54px 54px;
-  transform: rotate(-8deg) scale(1.1);
+    linear-gradient(rgba(22, 56, 77, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(22, 56, 77, 0.06) 1px, transparent 1px);
+  background-size: 58px 58px;
+  transform: rotate(-7deg) scale(1.08);
 }
 
 .rutas-fondo-mapa__linea {
   position: absolute;
-  height: 8px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--color-principal), var(--color-verde));
-  opacity: 0.25;
+  height: 12px;
+  border-radius: var(--radio-pill);
+  background: linear-gradient(90deg, var(--color-principal), #ffc766, var(--color-secundario));
+  opacity: 0.45;
   filter: blur(0.2px);
+  animation: deslizar-ruta 12s linear infinite;
 }
 
 .rutas-fondo-mapa__linea--uno {
-  width: 520px;
-  left: 8%;
-  top: 33%;
-  transform: rotate(-15deg);
+  width: 460px;
+  left: -10%;
+  top: 30%;
+  transform: rotate(-18deg);
 }
 
 .rutas-fondo-mapa__linea--dos {
-  width: 620px;
-  right: -8%;
-  top: 58%;
-  transform: rotate(18deg);
+  width: 560px;
+  right: -14%;
+  top: 62%;
+  transform: rotate(15deg);
+  animation-duration: 16s;
 }
 
 .rutas-fondo-mapa__punto {
   position: absolute;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   background: #ffffff;
-  border: 5px solid var(--color-principal);
+  border: 6px solid var(--color-principal);
   border-radius: 999px;
-  box-shadow: 0 16px 34px rgba(9, 105, 218, 0.22);
+  box-shadow: 0 18px 36px rgba(255, 107, 61, 0.24);
 }
 
 .rutas-fondo-mapa__punto--uno {
-  left: 31%;
-  top: 29%;
+  left: 23%;
+  top: 23%;
 }
 
 .rutas-fondo-mapa__punto--dos {
-  right: 24%;
-  top: 61%;
+  right: 18%;
+  top: 64%;
 }
 
 .rutas-app-shell {
   position: relative;
-  min-height: calc(100vh - 48px);
-  padding: 18px;
+  min-height: calc(100vh - 122px);
+  padding: 14px;
   display: grid;
-  grid-template-columns: minmax(340px, 440px) minmax(360px, 1fr);
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 16px;
-}
-
-.buscador-ruta-app {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.resultados-rutas-app {
-  grid-column: 1;
-  grid-row: 2;
-  min-height: 0;
-}
-
-.panel-ruta-app {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  min-height: 0;
+  gap: 12px;
 }
 
 .rutas-app-shell__ayuda {
-  grid-column: 1 / -1;
-  grid-row: 3;
-  min-height: 42px;
-  padding: 0 14px;
+  min-height: 48px;
+  padding: 12px 14px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  justify-self: start;
   color: var(--color-texto-suave);
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.68);
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 760;
-  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 22px;
+  backdrop-filter: blur(14px);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 .pagina-inicio__mini {
-  margin: 0 0 5px;
   color: var(--color-principal);
   font-size: 0.72rem;
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -146,5 +123,19 @@
 @keyframes girar {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes deslizar-ruta {
+  0% {
+    transform: translateX(0) rotate(-12deg);
+  }
+
+  50% {
+    transform: translateX(24px) rotate(-11deg);
+  }
+
+  100% {
+    transform: translateX(0) rotate(-12deg);
   }
 }

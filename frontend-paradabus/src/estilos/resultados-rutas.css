@@ -1,41 +1,61 @@
-/* =========================================================
-   RESULTADOS RUTAS - TARJETAS
-   ========================================================= */
-
 .resultados-rutas-app {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.68);
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 28px;
   box-shadow: var(--sombra-panel);
-  backdrop-filter: blur(22px);
-  overflow: hidden;
+  backdrop-filter: blur(20px);
 }
 
 .resultados-rutas-app__cabecera {
-  margin-bottom: 14px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  display: grid;
   gap: 12px;
 }
 
 .resultados-rutas-app__cabecera h2 {
-  margin: 0;
-  font-size: 1.28rem;
-  line-height: 1.05;
-  letter-spacing: -0.04em;
+  margin-top: 6px;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.resultados-rutas-app__texto {
+  margin-top: 10px;
+  color: var(--color-texto-suave);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.resultados-rutas-app__controles {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.resultados-rutas-app__contador {
+  min-height: 36px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-texto);
+  background: rgba(22, 56, 77, 0.05);
+  border: 1px solid rgba(22, 56, 77, 0.08);
+  border-radius: var(--radio-pill);
+  font-size: 0.76rem;
+  font-weight: 800;
 }
 
 .resultados-rutas-app__actualizar {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   color: var(--color-principal);
   background: var(--color-principal-suave);
+  border: 1px solid rgba(255, 107, 61, 0.12);
   border-radius: 15px;
 }
 
@@ -44,47 +64,33 @@
 }
 
 .resultados-rutas-app__lista {
-  min-height: 0;
-  overflow: auto;
-  padding-right: 3px;
   display: grid;
-  gap: 11px;
+  gap: 12px;
 }
-
-.resultados-rutas-app__lista::-webkit-scrollbar {
-  width: 4px;
-}
-
-.resultados-rutas-app__lista::-webkit-scrollbar-thumb {
-  background: rgba(9, 105, 218, 0.2);
-  border-radius: 999px;
-}
-
-/* TARJETA */
 
 .tarjeta-ruta {
   position: relative;
   width: 100%;
-  padding: 15px;
+  padding: 16px;
   display: grid;
   gap: 12px;
   color: var(--color-texto);
-  background: rgba(255, 255, 255, 0.74);
-  border: 1px solid var(--color-borde);
-  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(31, 26, 34, 0.08);
+  border-radius: 24px;
   text-align: left;
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 14px 32px rgba(31, 26, 34, 0.06);
   transition:
     transform 0.18s ease,
-    box-shadow 0.18s ease,
     border-color 0.18s ease,
+    box-shadow 0.18s ease,
     background 0.18s ease;
 }
 
 .tarjeta-ruta:hover {
-  transform: translateY(-1px);
-  border-color: rgba(9, 105, 218, 0.24);
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.09);
+  transform: translateY(-2px);
+  border-color: rgba(255, 107, 61, 0.22);
+  box-shadow: 0 18px 40px rgba(31, 26, 34, 0.1);
 }
 
 .tarjeta-ruta:active {
@@ -92,24 +98,24 @@
 }
 
 .tarjeta-ruta--activa {
-  background: rgba(232, 242, 255, 0.86);
-  border-color: rgba(9, 105, 218, 0.38);
+  background: linear-gradient(180deg, rgba(255, 240, 233, 0.95), rgba(255, 255, 255, 0.96));
+  border-color: rgba(255, 107, 61, 0.3);
   box-shadow:
-    0 18px 44px rgba(9, 105, 218, 0.14),
-    inset 0 0 0 1px rgba(9, 105, 218, 0.08);
+    0 22px 48px rgba(255, 107, 61, 0.16),
+    inset 0 0 0 1px rgba(255, 107, 61, 0.08);
 }
 
 .tarjeta-ruta__badge {
   position: absolute;
   top: 0;
   right: 0;
-  padding: 5px 10px;
+  padding: 6px 11px;
   color: #ffffff;
   background: linear-gradient(135deg, var(--color-principal), var(--color-principal-oscuro));
-  border-radius: 0 22px 0 14px;
-  font-size: 0.62rem;
+  border-radius: 0 24px 0 16px;
+  font-size: 0.64rem;
   font-weight: 900;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -120,98 +126,130 @@
   gap: 12px;
 }
 
-.tarjeta-ruta__tiempo {
+.tarjeta-ruta__encabezado {
+  min-width: 0;
   display: flex;
-  align-items: baseline;
-  gap: 6px;
+  align-items: center;
+  gap: 10px;
 }
 
-.tarjeta-ruta__tiempo svg {
-  align-self: center;
+.tarjeta-ruta__encabezado-texto {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.tarjeta-ruta__encabezado-texto strong {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.tarjeta-ruta__encabezado-texto span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--color-texto-suave);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.tarjeta-ruta__tiempo-principal {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.tarjeta-ruta__tiempo-principal svg {
   color: var(--color-principal);
 }
 
-.tarjeta-ruta__tiempo strong {
-  font-family:
-    "Plus Jakarta Sans",
-    Inter,
-    sans-serif;
-  font-size: 1.8rem;
+.tarjeta-ruta__tiempo-principal strong {
+  font-family: Sora, Manrope, sans-serif;
+  font-size: 1.85rem;
   line-height: 1;
-  letter-spacing: -0.07em;
 }
 
-.tarjeta-ruta__tiempo span {
+.tarjeta-ruta__tiempo-principal span {
   color: var(--color-texto-suave);
-  font-size: 0.86rem;
-  font-weight: 850;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .tarjeta-ruta__linea {
   display: flex;
-  align-items: center;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
 .linea-bus-pill {
-  min-width: 42px;
-  height: 28px;
-  padding: 0 10px;
+  min-width: 46px;
+  min-height: 32px;
+  padding: 0 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  background: linear-gradient(135deg, var(--color-principal), var(--color-principal-oscuro));
-  border-radius: 10px;
+  background: linear-gradient(135deg, var(--color-secundario), #275d79);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(22, 56, 77, 0.18);
   font-size: 0.82rem;
-  font-weight: 950;
-  box-shadow: 0 10px 20px rgba(9, 105, 218, 0.18);
+  font-weight: 900;
+}
+
+.linea-bus-pill--grande {
+  min-width: 62px;
+  min-height: 54px;
+  border-radius: 18px;
+  font-size: 0.96rem;
 }
 
 .tarjeta-ruta__tipo,
 .tarjeta-ruta__dato {
-  min-height: 28px;
-  padding: 0 9px;
+  min-height: 30px;
+  padding: 0 10px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   color: var(--color-texto-suave);
-  background: rgba(248, 250, 252, 0.85);
-  border: 1px solid var(--color-borde);
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 850;
+  background: rgba(22, 56, 77, 0.05);
+  border: 1px solid rgba(22, 56, 77, 0.08);
+  border-radius: var(--radio-pill);
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
-.tarjeta-ruta__horas {
-  display: flex;
-  align-items: center;
+.tarjeta-ruta__datos-grid {
+  display: grid;
   gap: 8px;
-  color: var(--color-texto-suave);
-  font-size: 0.78rem;
-  font-weight: 760;
 }
 
-.tarjeta-ruta__resumen {
-  margin: -2px 0 0;
+.tarjeta-ruta__datos-grid span {
+  min-height: 38px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   color: var(--color-texto-suave);
-  font-size: 0.78rem;
-  line-height: 1.35;
+  background: rgba(255, 248, 244, 0.8);
+  border: 1px solid rgba(255, 107, 61, 0.08);
+  border-radius: 14px;
+  font-size: 0.76rem;
+  font-weight: 700;
 }
-
-/* TIEMPO REAL */
 
 .tiempo-real {
-  min-width: 56px;
-  height: 44px;
-  padding: 0 8px;
+  min-width: 62px;
+  min-height: 52px;
+  padding: 8px 10px;
   display: grid;
   place-items: center;
   align-content: center;
-  border-radius: 16px;
+  border-radius: 18px;
   font-family:
-    "JetBrains Mono",
+    'JetBrains Mono',
     ui-monospace,
     monospace;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
@@ -219,106 +257,89 @@
 }
 
 .tiempo-real span {
-  font-size: 1rem;
+  font-size: 1.02rem;
   line-height: 1;
   font-weight: 900;
 }
 
 .tiempo-real small {
-  margin-top: 1px;
+  margin-top: 2px;
   font-size: 0.58rem;
   font-weight: 900;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .tiempo-real--verde {
-  color: #166534;
-  background: #dcfce7;
+  color: #0f6a45;
+  background: var(--color-verde-suave);
 }
 
 .tiempo-real--naranja {
-  color: #9a3412;
-  background: #ffedd5;
+  color: #9a5b00;
+  background: var(--color-naranja-suave);
 }
 
 .tiempo-real--rojo {
-  color: #991b1b;
-  background: #fee2e2;
+  color: #9d1d1d;
+  background: var(--color-rojo-suave);
 }
 
 .tiempo-real--gris {
   color: var(--color-texto-suave);
-  background: #f1f5f9;
+  background: #edf2f6;
   animation: none;
 }
 
-@keyframes pulso-tiempo-real {
-  0%,
-  100% {
-    transform: scale(1);
-    filter: brightness(1);
-  }
-
-  50% {
-    transform: scale(1.035);
-    filter: brightness(1.03);
-  }
-}
-
-/* VACÍO / LOADING */
-
 .estado-rutas-vacio {
   min-height: 240px;
-  padding: 22px;
+  padding: 24px;
   display: grid;
   place-items: center;
   align-content: center;
   text-align: center;
   color: var(--color-texto-suave);
-  background: rgba(248, 250, 252, 0.62);
-  border: 1px dashed var(--color-borde-fuerte);
+  background: rgba(255, 255, 255, 0.54);
+  border: 1px dashed rgba(22, 56, 77, 0.18);
   border-radius: 24px;
 }
 
 .estado-rutas-vacio__icono {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   margin-bottom: 12px;
   display: grid;
   place-items: center;
   color: var(--color-principal);
   background: var(--color-principal-suave);
-  border-radius: 19px;
+  border-radius: 20px;
 }
 
 .estado-rutas-vacio h3 {
-  margin: 0;
-  color: var(--color-texto);
-  font-size: 1.05rem;
+  font-size: 1.08rem;
 }
 
 .estado-rutas-vacio p {
-  max-width: 260px;
-  margin: 8px 0 0;
+  max-width: 280px;
+  margin-top: 8px;
   font-size: 0.86rem;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .skeleton-rutas {
   display: grid;
-  gap: 11px;
+  gap: 12px;
 }
 
 .skeleton-rutas div {
-  height: 128px;
-  border-radius: 22px;
+  height: 148px;
+  border-radius: 24px;
   background:
     linear-gradient(
       90deg,
-      rgba(241, 245, 249, 0.72) 0%,
-      rgba(255, 255, 255, 0.9) 45%,
-      rgba(241, 245, 249, 0.72) 100%
+      rgba(241, 245, 248, 0.7) 0%,
+      rgba(255, 255, 255, 0.95) 45%,
+      rgba(241, 245, 248, 0.7) 100%
     );
   background-size: 220% 100%;
   animation: skeleton-carga 1.3s ease-in-out infinite;
@@ -331,5 +352,16 @@
 
   100% {
     background-position: -100% 0;
+  }
+}
+
+@keyframes pulso-tiempo-real {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.03);
   }
 }

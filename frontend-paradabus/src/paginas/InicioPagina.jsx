@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   ArrowRight,
+  ArrowUpDown,
   BusFront,
   Clock3,
   Footprints,
@@ -34,10 +35,6 @@ function obtenerHoraActual() {
 
 function obtenerNombreLugar(lugar) {
   return lugar?.nombre || lugar?.displayName || lugar?.direccion || 'Lugar seleccionado';
-}
-
-function obtenerDireccionLugar(lugar) {
-  return lugar?.direccion || lugar?.address || lugar?.fuente || '';
 }
 
 function obtenerOpcionesRespuesta(respuesta) {
@@ -119,6 +116,18 @@ function obtenerTipoRuta(ruta) {
   return 'Directa';
 }
 
+function obtenerNombreParada(parada, respaldo) {
+  return parada?.nombre || parada?.stopName || respaldo;
+}
+
+function formatearMinutos(valor) {
+  if (valor === null || valor === undefined || Number.isNaN(Number(valor))) {
+    return '--';
+  }
+
+  return `${Number(valor)} min`;
+}
+
 function formatearMetros(metros) {
   if (!metros && metros !== 0) {
     return null;
@@ -139,6 +148,8 @@ function TarjetaRuta({ ruta, activa, indice, onSeleccionar }) {
   const caminata = ruta?.distanciaAndandoTotalMetros
     ? formatearMetros(ruta.distanciaAndandoTotalMetros)
     : null;
+  const paradaSubida = obtenerNombreParada(ruta?.paradaOrigen, 'Parada de subida');
+  const paradaBajada = obtenerNombreParada(ruta?.paradaDestino, 'Parada de bajada');
 
   return (
     <button
@@ -152,15 +163,22 @@ function TarjetaRuta({ ruta, activa, indice, onSeleccionar }) {
     >
       {indice === 0 && (
         <span className="tarjeta-ruta__badge">
-          Mejor opción
+          Mejor opcion
         </span>
       )}
 
       <div className="tarjeta-ruta__superior">
-        <div className="tarjeta-ruta__tiempo">
-          <BusFront size={20} />
-          <strong>{ruta?.minutosTotal ?? '--'}</strong>
-          <span>min</span>
+        <div className="tarjeta-ruta__encabezado">
+          <span className="linea-bus-pill">
+            {linea}
+          </span>
+
+          <div className="tarjeta-ruta__encabezado-texto">
+            <strong>{tipoRuta}</strong>
+            <span>
+              {paradaSubida} <ArrowRight size={14} /> {paradaBajada}
+            </span>
+          </div>
         </div>
 
         <div className={`tiempo-real ${claseMinutos}`}>
@@ -169,13 +187,15 @@ function TarjetaRuta({ ruta, activa, indice, onSeleccionar }) {
         </div>
       </div>
 
-      <div className="tarjeta-ruta__linea">
-        <span className="linea-bus-pill">
-          {linea}
-        </span>
+      <div className="tarjeta-ruta__tiempo-principal">
+        <BusFront size={20} />
+        <strong>{ruta?.minutosTotal ?? '--'}</strong>
+        <span>min de viaje total</span>
+      </div>
 
+      <div className="tarjeta-ruta__linea">
         <span className="tarjeta-ruta__tipo">
-          {tipoRuta}
+          {ruta?.resumen || 'Trayecto listo para seguir paso a paso'}
         </span>
 
         {caminata && (
@@ -186,23 +206,22 @@ function TarjetaRuta({ ruta, activa, indice, onSeleccionar }) {
         )}
       </div>
 
-      <div className="tarjeta-ruta__horas">
+      <div className="tarjeta-ruta__datos-grid">
         <span>
+          <Clock3 size={14} />
           Sale {obtenerTextoHora(ruta?.horaSalidaBus || ruta?.horaInicioRuta)}
         </span>
 
-        <ArrowRight size={15} />
-
         <span>
+          <MapPinned size={14} />
           Llega {obtenerTextoHora(ruta?.horaLlegadaFinal || ruta?.horaLlegadaBus)}
         </span>
-      </div>
 
-      {ruta?.resumen && (
-        <p className="tarjeta-ruta__resumen">
-          {ruta.resumen}
-        </p>
-      )}
+        <span>
+          <Navigation size={14} />
+          {formatearMinutos(ruta?.minutosBus)}
+        </span>
+      </div>
     </button>
   );
 }
@@ -230,7 +249,7 @@ function PanelRutaSeleccionada({ ruta, origen, destino, onCerrar }) {
           <MapPinned size={24} />
           <h3>Selecciona una ruta</h3>
           <p>
-            Al elegir una opción verás aquí el resumen, el mapa y los pasos del viaje.
+            Al elegir una opcion veras aqui el mapa, el resumen y los pasos del viaje.
           </p>
         </div>
       </aside>
@@ -240,15 +259,25 @@ function PanelRutaSeleccionada({ ruta, origen, destino, onCerrar }) {
   const minutosInfoBus = obtenerMinutosInfoBus(ruta);
   const claseMinutos = obtenerClaseMinutos(minutosInfoBus);
   const linea = obtenerLineaRuta(ruta);
+  const caminata = formatearMetros(ruta?.distanciaAndandoTotalMetros);
 
   return (
     <aside className="panel-ruta-app panel-ruta-app--visible">
       <div className="panel-ruta-app__cabecera">
-        <div>
-          <p className="panel-ruta-app__mini">Ruta seleccionada</p>
-          <h2>
-            Línea {linea}
-          </h2>
+        <div className="panel-ruta-app__linea-hero">
+          <span className="linea-bus-pill linea-bus-pill--grande">
+            {linea}
+          </span>
+
+          <div>
+            <p className="panel-ruta-app__mini">Seguimiento del trayecto</p>
+            <h2>
+              Hasta {obtenerNombreLugar(destino)}
+            </h2>
+            <span className="panel-ruta-app__subtitulo">
+              {obtenerTipoRuta(ruta)} · salida {obtenerTextoHora(ruta?.horaSalidaBus || ruta?.horaInicioRuta)}
+            </span>
+          </div>
         </div>
 
         <button
@@ -262,26 +291,43 @@ function PanelRutaSeleccionada({ ruta, origen, destino, onCerrar }) {
       </div>
 
       <div className="panel-ruta-app__resumen">
-        <div>
+        <div className="panel-ruta-app__dato">
           <strong>{ruta?.minutosTotal ?? '--'} min</strong>
           <span>Tiempo total</span>
         </div>
 
-        <div>
+        <div className="panel-ruta-app__dato">
           <strong>{obtenerTextoHora(ruta?.horaLlegadaFinal || ruta?.horaLlegadaBus)}</strong>
           <span>Llegada</span>
         </div>
 
+        <div className="panel-ruta-app__dato">
+          <strong>{caminata || '--'}</strong>
+          <span>Caminata total</span>
+        </div>
+
         <div className={`tiempo-real ${claseMinutos}`}>
           <span>{minutosInfoBus ?? '--'}</span>
-          <small>min</small>
+          <small>live</small>
+        </div>
+      </div>
+
+      <div className="panel-ruta-app__estado-live">
+        <div className="panel-ruta-app__estado-live-icono">
+          <Sparkles size={16} />
+        </div>
+
+        <div>
+          <strong>Panel pensado para seguir el viaje en marcha</strong>
+          <span>
+            Tienes el recorrido, la subida, la bajada y la caminata final en la misma vista.
+          </span>
         </div>
       </div>
 
       <div className="panel-ruta-app__mapa">
         <MapaRuta
           ruta={ruta}
-          rutaSeleccionada={ruta}
           origen={origen}
           destino={destino}
         />
@@ -296,7 +342,7 @@ function PanelRutaSeleccionada({ ruta, origen, destino, onCerrar }) {
           <div>
             <strong>Camina hasta la parada</strong>
             <span>
-              {ruta?.minutosAndandoOrigen ?? '--'} min hasta {ruta?.paradaOrigen?.nombre || 'la parada de salida'}
+              {ruta?.minutosAndandoOrigen ?? '--'} min hasta {obtenerNombreParada(ruta?.paradaOrigen, 'la parada de salida')}
             </span>
           </div>
         </div>
@@ -307,7 +353,7 @@ function PanelRutaSeleccionada({ ruta, origen, destino, onCerrar }) {
           </div>
 
           <div>
-            <strong>Coge la línea {linea}</strong>
+            <strong>Coge la linea {linea}</strong>
             <span>
               Sale a las {obtenerTextoHora(ruta?.horaSalidaBus)} · {ruta?.minutosBus ?? '--'} min en bus
             </span>
@@ -322,7 +368,7 @@ function PanelRutaSeleccionada({ ruta, origen, destino, onCerrar }) {
           <div>
             <strong>Baja en la parada</strong>
             <span>
-              {ruta?.paradaDestino?.nombre || 'Parada de destino'}
+              {obtenerNombreParada(ruta?.paradaDestino, 'Parada de destino')}
             </span>
           </div>
         </div>
@@ -372,8 +418,33 @@ function InicioPagina() {
       return 'Falta elegir destino';
     }
 
-    return `${obtenerNombreLugar(origenSeleccionado)} → ${obtenerNombreLugar(destinoSeleccionado)}`;
+    return `${obtenerNombreLugar(origenSeleccionado)} -> ${obtenerNombreLugar(destinoSeleccionado)}`;
   }, [origenSeleccionado, destinoSeleccionado]);
+
+  const mejorRuta = rutas[0] || null;
+
+  const metricasRapidas = useMemo(() => {
+    return [
+      {
+        id: 'opciones',
+        etiqueta: 'Opciones',
+        valor: rutas.length > 0 ? String(rutas.length) : '--',
+        icono: Route
+      },
+      {
+        id: 'live',
+        etiqueta: 'Proximo bus',
+        valor: mejorRuta ? formatearMinutos(obtenerMinutosInfoBus(mejorRuta)) : '--',
+        icono: Clock3
+      },
+      {
+        id: 'walk',
+        etiqueta: 'Caminata',
+        valor: mejorRuta ? (formatearMetros(mejorRuta?.distanciaAndandoTotalMetros) || '--') : '--',
+        icono: Footprints
+      }
+    ];
+  }, [mejorRuta, rutas.length]);
 
   function limpiarRutas() {
     setRutas([]);
@@ -394,7 +465,7 @@ function InicioPagina() {
 
   function usarUbicacionActual() {
     if (!navigator.geolocation) {
-      setError('Tu navegador no permite usar la ubicación actual.');
+      setError('Tu navegador no permite usar la ubicacion actual.');
       return;
     }
 
@@ -404,8 +475,8 @@ function InicioPagina() {
     navigator.geolocation.getCurrentPosition(
       (posicion) => {
         const lugarActual = {
-          nombre: 'Mi ubicación actual',
-          direccion: 'Posición detectada por GPS',
+          nombre: 'Mi ubicacion actual',
+          direccion: 'Posicion detectada por GPS',
           lat: posicion.coords.latitude,
           lon: posicion.coords.longitude,
           fuente: 'GPS'
@@ -416,7 +487,7 @@ function InicioPagina() {
         setCargando(false);
       },
       () => {
-        setError('No se pudo obtener tu ubicación. Revisa los permisos del navegador.');
+        setError('No se pudo obtener tu ubicacion. Revisa los permisos del navegador.');
         setCargando(false);
       },
       {
@@ -427,7 +498,14 @@ function InicioPagina() {
   }
 
   function elegirEnMapaTemporal() {
-    setError('Elegir en mapa lo haremos en el siguiente bloque. Primero dejamos bien la pantalla de rutas.');
+    setError('La seleccion manual en mapa queda preparada para el siguiente bloque del frontend.');
+  }
+
+  function intercambiarOrigenDestino() {
+    setOrigenSeleccionado(destinoSeleccionado);
+    setDestinoSeleccionado(origenSeleccionado);
+    setError('');
+    limpiarRutas();
   }
 
   async function buscarOpcionesRuta() {
@@ -456,7 +534,7 @@ function InicioPagina() {
       setRutaSeleccionada(opciones[0] || null);
 
       if (opciones.length === 0) {
-        setError('No encontré una ruta directa para ese trayecto. Después añadiremos transbordos bien desde backend.');
+        setError('No encontre una ruta directa para ese trayecto. La pantalla ya queda preparada para cuando metas mas variantes desde backend.');
       }
     } catch (errorPeticion) {
       setError(errorPeticion.message || 'No se pudieron buscar rutas.');
@@ -486,14 +564,25 @@ function InicioPagina() {
               </p>
 
               <h1>
-                ¿A dónde quieres ir?
+                Mueve toda la planificacion del viaje a una sola pantalla.
               </h1>
+
+              <p className="buscador-ruta-app__intro">
+                Inspirado en apps de movilidad: busca rapido, cambia origen y destino,
+                compara tarjetas y sigue el trayecto sin perderte en la interfaz.
+              </p>
             </div>
 
             <div className="buscador-ruta-app__estado">
               <span />
               InfoBus
             </div>
+          </div>
+
+          <div className="buscador-ruta-app__hero-tags">
+            <span className="chip-app chip-app--activo">Tiempo real</span>
+            <span className="chip-app">Ruta rapida</span>
+            <span className="chip-app">Pensado para movil</span>
           </div>
 
           <div className="buscador-ruta-app__campos">
@@ -506,7 +595,7 @@ function InicioPagina() {
             <div className="buscador-ruta-app__inputs">
               <SelectorLugar
                 etiqueta="Origen"
-                placeholder="Origen o ubicación actual"
+                placeholder="Origen o ubicacion actual"
                 valor={origenSeleccionado}
                 tipo="origen"
                 onSeleccionar={manejarSeleccionOrigen}
@@ -515,9 +604,21 @@ function InicioPagina() {
                 onTextoCambiado={limpiarRutas}
               />
 
+              <div className="buscador-ruta-app__swap">
+                <button
+                  type="button"
+                  className="boton-intercambiar-ruta"
+                  onClick={intercambiarOrigenDestino}
+                  disabled={!origenSeleccionado && !destinoSeleccionado}
+                  aria-label="Intercambiar origen y destino"
+                >
+                  <ArrowUpDown size={16} />
+                </button>
+              </div>
+
               <SelectorLugar
                 etiqueta="Destino"
-                placeholder="¿A dónde vas?"
+                placeholder="A donde vas"
                 valor={destinoSeleccionado}
                 tipo="destino"
                 onSeleccionar={manejarSeleccionDestino}
@@ -535,7 +636,7 @@ function InicioPagina() {
               disabled={cargando}
             >
               <LocateFixed size={17} />
-              Mi ubicación
+              Mi ubicacion
             </button>
 
             <button
@@ -559,6 +660,28 @@ function InicioPagina() {
             <span>{resumenBusqueda}</span>
           </div>
 
+          <div className="buscador-ruta-app__metricas">
+            {metricasRapidas.map((metrica) => {
+              const Icono = metrica.icono;
+
+              return (
+                <article
+                  key={metrica.id}
+                  className="buscador-ruta-app__metrica"
+                >
+                  <div className="buscador-ruta-app__metrica-icono">
+                    <Icono size={16} />
+                  </div>
+
+                  <div>
+                    <strong>{metrica.valor}</strong>
+                    <span>{metrica.etiqueta}</span>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
           {error && (
             <div className="buscador-ruta-app__error">
               {error}
@@ -576,16 +699,26 @@ function InicioPagina() {
               <h2>
                 Rutas disponibles
               </h2>
+
+              <p className="resultados-rutas-app__texto">
+                Pulsa una tarjeta para ver el mapa y el seguimiento del viaje.
+              </p>
             </div>
 
-            <button
-              type="button"
-              className="resultados-rutas-app__actualizar"
-              onClick={buscarOpcionesRuta}
-              disabled={cargando || !puedeBuscar}
-            >
-              <RefreshCw size={16} />
-            </button>
+            <div className="resultados-rutas-app__controles">
+              <span className="resultados-rutas-app__contador">
+                {rutas.length > 0 ? `${rutas.length} rutas` : 'Sin rutas'}
+              </span>
+
+              <button
+                type="button"
+                className="resultados-rutas-app__actualizar"
+                onClick={buscarOpcionesRuta}
+                disabled={cargando || !puedeBuscar}
+              >
+                <RefreshCw size={16} />
+              </button>
+            </div>
           </div>
 
           {cargando && (
@@ -624,7 +757,7 @@ function InicioPagina() {
 
         <div className="rutas-app-shell__ayuda">
           <Sparkles size={16} />
-          Primero probamos directas. Después metemos transbordos sin que se vuelva lenta la app.
+          La nueva interfaz ya esta preparada para crecer con transbordos, filtros y favoritos sin perder claridad.
         </div>
       </div>
     </section>

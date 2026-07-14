@@ -1,64 +1,52 @@
-/* =========================================================
-   BASE GLOBAL - PARADABUS
-   Colores, fuentes, reset y estilo base de toda la app
-   ========================================================= */
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
 
 * {
   box-sizing: border-box;
 }
 
 :root {
-  /* Fondo general */
-  --color-fondo: #fbf9f6;
-  --color-fondo-mapa: #eef1f4;
-  --color-panel: #ffffff;
+  --color-fondo: #f6efe7;
+  --color-fondo-profundo: #1f1a22;
+  --color-fondo-mapa: #eef5f8;
+  --color-panel: rgba(255, 255, 255, 0.92);
+  --color-panel-fuerte: #ffffff;
+  --color-panel-suave: #fff8f4;
 
-  /* Texto */
-  --color-texto: #1b1c1a;
-  --color-texto-suave: #6b625d;
-  --color-texto-muy-suave: #9a8f88;
+  --color-texto: #1f1b24;
+  --color-texto-suave: #6f6670;
+  --color-texto-apagado: #93878d;
+  --color-texto-claro: #f8f2ee;
 
-  /* Bordes */
-  --color-borde: rgba(139, 114, 99, 0.22);
-  --color-borde-fuerte: rgba(139, 114, 99, 0.38);
+  --color-borde: rgba(38, 28, 34, 0.1);
+  --color-borde-fuerte: rgba(38, 28, 34, 0.18);
 
-  /* Marca */
-  --color-principal: #0969da;
-  --color-principal-oscuro: #0757b8;
-  --color-principal-suave: #e8f2ff;
-  --color-principal-medio: #d7eaff;
+  --color-principal: #ff6b3d;
+  --color-principal-oscuro: #e8542a;
+  --color-principal-suave: #fff0e9;
+  --color-principal-luz: #ffb69e;
 
-  /* Estados */
-  --color-verde: #16a34a;
-  --color-verde-suave: #dcfce7;
-  --color-naranja: #f97316;
-  --color-naranja-suave: #ffedd5;
-  --color-rojo: #dc2626;
-  --color-rojo-suave: #fee2e2;
+  --color-secundario: #16384d;
+  --color-secundario-suave: #e2eff6;
+  --color-verde: #1fb874;
+  --color-verde-suave: #def9ea;
+  --color-naranja: #ff9d2d;
+  --color-naranja-suave: #fff0cf;
+  --color-rojo: #ef4444;
+  --color-rojo-suave: #ffe6e6;
 
-  /* Superficies tipo app */
-  --superficie-glass: rgba(255, 255, 255, 0.78);
-  --superficie-glass-fuerte: rgba(255, 255, 255, 0.92);
-  --superficie-suave: rgba(248, 250, 252, 0.86);
+  --sombra-panel: 0 22px 48px rgba(31, 26, 34, 0.12);
+  --sombra-flotante: 0 28px 70px rgba(31, 26, 34, 0.16);
+  --sombra-resalte: 0 18px 40px rgba(255, 107, 61, 0.2);
 
-  /* Sombras */
-  --sombra-panel: 0 18px 45px rgba(15, 23, 42, 0.08);
-  --sombra-flotante: 0 20px 60px rgba(15, 23, 42, 0.16);
-  --sombra-boton: 0 12px 28px rgba(9, 105, 218, 0.22);
-
-  /* Radios */
-  --radio-gigante: 32px;
-  --radio-grande: 26px;
-  --radio-medio: 18px;
-  --radio-pequeno: 14px;
+  --radio-xl: 32px;
+  --radio-lg: 24px;
+  --radio-md: 18px;
+  --radio-sm: 14px;
   --radio-pill: 999px;
 
-  /* Layout */
-  --alto-barra-movil: 78px;
-  --ancho-sidebar: 236px;
-  --padding-app: 20px;
+  --alto-barra-movil: 82px;
+  --ancho-sidebar: 300px;
+  --ancho-max-contenido: 1560px;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -79,17 +67,19 @@ body {
   min-width: 320px;
   color: var(--color-texto);
   background:
-    radial-gradient(circle at top left, rgba(9, 105, 218, 0.08), transparent 30%),
-    linear-gradient(180deg, #ffffff 0%, var(--color-fondo) 40%, #f4f6f8 100%);
+    radial-gradient(circle at top left, rgba(255, 107, 61, 0.16), transparent 24%),
+    radial-gradient(circle at top right, rgba(22, 56, 77, 0.12), transparent 18%),
+    linear-gradient(180deg, #fff9f5 0%, #f6efe7 44%, #f2f5f7 100%);
   font-family:
-    Inter,
+    Manrope,
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
-    "Segoe UI",
+    'Segoe UI',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
 }
 
 button,
@@ -100,6 +90,9 @@ select {
 }
 
 button {
+  border: 0;
+  background: none;
+  color: inherit;
   cursor: pointer;
 }
 
@@ -110,10 +103,6 @@ button:disabled {
 button,
 input {
   -webkit-tap-highlight-color: transparent;
-}
-
-button {
-  border: 0;
 }
 
 a {
@@ -130,15 +119,16 @@ h1,
 h2,
 h3,
 h4 {
+  margin: 0;
   font-family:
-    "Plus Jakarta Sans",
-    Inter,
-    system-ui,
+    Sora,
+    Manrope,
     sans-serif;
+  letter-spacing: -0.04em;
 }
 
 p {
-  margin-top: 0;
+  margin: 0;
 }
 
 ::selection {
@@ -146,26 +136,52 @@ p {
   background: var(--color-principal);
 }
 
-/* Utilidades comunes */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(255, 107, 61, 0.18);
+}
 
 .texto-mono {
   font-family:
-    "JetBrains Mono",
+    'JetBrains Mono',
     ui-monospace,
     SFMono-Regular,
     Menlo,
     monospace;
 }
 
+.chip-app {
+  min-height: 34px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--color-texto);
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radio-pill);
+  box-shadow: inset 0 0 0 1px rgba(31, 26, 34, 0.04);
+  backdrop-filter: blur(12px);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.chip-app--activo {
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--color-principal), var(--color-principal-oscuro));
+  box-shadow: var(--sombra-resalte);
+}
+
 .superficie-glass {
-  background: var(--superficie-glass);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.72);
   box-shadow: var(--sombra-flotante);
   backdrop-filter: blur(18px);
 }
 
 .boton-primario-app {
-  min-height: 46px;
+  min-height: 48px;
   padding: 0 18px;
   display: inline-flex;
   align-items: center;
@@ -174,51 +190,68 @@ p {
   color: #ffffff;
   background: linear-gradient(135deg, var(--color-principal), var(--color-principal-oscuro));
   border-radius: 16px;
-  font-size: 0.9rem;
-  font-weight: 850;
-  box-shadow: var(--sombra-boton);
-}
-
-.boton-primario-app:active {
-  transform: scale(0.98);
+  box-shadow: var(--sombra-resalte);
+  font-size: 0.92rem;
+  font-weight: 800;
 }
 
 .boton-secundario-app {
-  min-height: 42px;
-  padding: 0 15px;
+  min-height: 44px;
+  padding: 0 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: var(--color-principal);
-  background: var(--color-principal-suave);
-  border: 1px solid rgba(9, 105, 218, 0.16);
+  color: var(--color-secundario);
+  background: var(--color-secundario-suave);
+  border: 1px solid rgba(22, 56, 77, 0.12);
   border-radius: 15px;
   font-size: 0.86rem;
-  font-weight: 850;
+  font-weight: 800;
 }
 
 .pagina-placeholder {
-  min-height: calc(100vh - 48px);
-  padding: 26px;
-  background: var(--superficie-glass-fuerte);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-grande);
+  min-height: 360px;
+  padding: 24px;
+  background: var(--color-panel);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radio-xl);
   box-shadow: var(--sombra-panel);
   backdrop-filter: blur(18px);
 }
 
 .pagina-placeholder h1 {
-  margin: 0;
-  font-size: clamp(2rem, 4vw, 3.4rem);
-  line-height: 1;
-  letter-spacing: -0.06em;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  line-height: 0.98;
 }
 
 .pagina-placeholder p {
   max-width: 620px;
   margin-top: 12px;
   color: var(--color-texto-suave);
-  font-size: 0.96rem;
-  line-height: 1.5;
+  line-height: 1.55;
+}
+
+.mensaje-error {
+  padding: 12px 14px;
+  color: var(--color-rojo);
+  background: var(--color-rojo-suave);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  border-radius: 16px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.leaflet-control-attribution {
+  font-family: Manrope, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }

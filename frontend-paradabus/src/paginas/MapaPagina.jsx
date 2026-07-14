@@ -4,6 +4,7 @@ import {
   Clock,
   LocateFixed,
   MapPin,
+  MapPinned,
   Navigation,
   X
 } from 'lucide-react';
@@ -16,8 +17,8 @@ import {
 } from 'react-leaflet';
 import L from 'leaflet';
 
-import { obtenerTodasLasParadas } from '../servicios/paradasServicio';
 import { obtenerInfoBusParada } from '../servicios/infobusServicio';
+import { obtenerTodasLasParadas } from '../servicios/paradasServicio';
 
 function crearIconoParadaMapa() {
   return L.divIcon({
@@ -102,7 +103,7 @@ function obtenerTextoLinea(item) {
     item.nombreLinea ||
     item.routeShortName ||
     item.route_short_name ||
-    'Línea'
+    'Linea'
   );
 }
 
@@ -115,7 +116,7 @@ function obtenerTextoRuta(item) {
     item.nombreDestino ||
     item.tripHeadsign ||
     item.trip_headsign ||
-    'Próximo bus'
+    'Proximo bus'
   );
 }
 
@@ -180,15 +181,12 @@ function AjustarCentro({ centro, zoom }) {
 function MapaPagina() {
   const [paradas, setParadas] = useState([]);
   const [paradaSeleccionada, setParadaSeleccionada] = useState(null);
-
   const [infoBus, setInfoBus] = useState(null);
   const [cargandoParadas, setCargandoParadas] = useState(false);
   const [cargandoInfoBus, setCargandoInfoBus] = useState(false);
-
   const [errorParadas, setErrorParadas] = useState('');
   const [errorInfoBus, setErrorInfoBus] = useState('');
   const [errorUbicacion, setErrorUbicacion] = useState('');
-
   const [ubicacionUsuario, setUbicacionUsuario] = useState(null);
   const [centrarMapa, setCentrarMapa] = useState(null);
 
@@ -257,7 +255,7 @@ function MapaPagina() {
     setErrorUbicacion('');
 
     if (!navigator.geolocation) {
-      setErrorUbicacion('Tu navegador no permite usar ubicación.');
+      setErrorUbicacion('Tu navegador no permite usar ubicacion.');
       return;
     }
 
@@ -265,14 +263,13 @@ function MapaPagina() {
       (posicion) => {
         const lat = posicion.coords.latitude;
         const lon = posicion.coords.longitude;
-
         const punto = [lat, lon];
 
         setUbicacionUsuario(punto);
         setCentrarMapa(punto);
       },
       () => {
-        setErrorUbicacion('No se pudo obtener tu ubicación. Revisa permisos del navegador.');
+        setErrorUbicacion('No se pudo obtener tu ubicacion. Revisa permisos del navegador.');
       },
       {
         enableHighAccuracy: true,
@@ -285,23 +282,66 @@ function MapaPagina() {
   return (
     <section className="pagina-mapa">
       <header className="pagina-mapa__cabecera">
-        <div>
+        <div className="pagina-mapa__headline">
           <p className="pagina-inicio__mini">Mapa</p>
-          <h1>Paradas de Vigo</h1>
+          <h1>Explora paradas y tiempos en una vista tipo app.</h1>
           <p>
-            Consulta todas las paradas y toca una para ver los próximos buses en tiempo real.
+            Consulta todas las paradas, toca una y abre un panel estilo hoja inferior
+            con los proximos buses en tiempo real.
           </p>
         </div>
 
-        <button
-          type="button"
-          className="boton-mi-ubicacion"
-          onClick={activarMiUbicacion}
-        >
-          <LocateFixed size={18} />
-          Mi ubicación
-        </button>
+        <div className="pagina-mapa__acciones-superiores">
+          <div className="pagina-mapa__chips">
+            <span className="chip-app chip-app--activo">InfoBus live</span>
+            <span className="chip-app">Paradas completas</span>
+          </div>
+
+          <button
+            type="button"
+            className="boton-mi-ubicacion"
+            onClick={activarMiUbicacion}
+          >
+            <LocateFixed size={18} />
+            Mi ubicacion
+          </button>
+        </div>
       </header>
+
+      <section className="pagina-mapa__resumen">
+        <article className="pagina-mapa__dato">
+          <div className="pagina-mapa__dato-icono">
+            <MapPin size={16} />
+          </div>
+
+          <div>
+            <strong>{paradas.length || '--'}</strong>
+            <span>Paradas cargadas</span>
+          </div>
+        </article>
+
+        <article className="pagina-mapa__dato">
+          <div className="pagina-mapa__dato-icono">
+            <MapPinned size={16} />
+          </div>
+
+          <div>
+            <strong>{paradaSeleccionada ? paradaSeleccionada.id || 'Activa' : '--'}</strong>
+            <span>Parada seleccionada</span>
+          </div>
+        </article>
+
+        <article className="pagina-mapa__dato">
+          <div className="pagina-mapa__dato-icono">
+            <BusFront size={16} />
+          </div>
+
+          <div>
+            <strong>{infoBus ? infoBus.length : '--'}</strong>
+            <span>Salidas visibles</span>
+          </div>
+        </article>
+      </section>
 
       {errorUbicacion && (
         <p className="mensaje-error">
@@ -353,8 +393,8 @@ function MapaPagina() {
             >
               <Popup>
                 <div className="popup-parada">
-                  <strong>Tu ubicación</strong>
-                  <span>Ubicación actual del dispositivo</span>
+                  <strong>Tu ubicacion</strong>
+                  <span>Ubicacion actual del dispositivo</span>
                 </div>
               </Popup>
             </Marker>
@@ -420,7 +460,7 @@ function MapaPagina() {
 
             {cargandoInfoBus && (
               <p className="panel-infobus__mensaje">
-                Cargando próximos buses...
+                Cargando proximos buses...
               </p>
             )}
 
@@ -432,7 +472,7 @@ function MapaPagina() {
 
             {infoBus && infoBus.length === 0 && (
               <p className="panel-infobus__vacio">
-                No hay próximos buses disponibles ahora.
+                No hay proximos buses disponibles ahora.
               </p>
             )}
 
@@ -452,7 +492,7 @@ function MapaPagina() {
 
                       <small>
                         <Clock size={14} />
-                        Próximo bus
+                        Proximo bus
                       </small>
                     </div>
 

@@ -1,46 +1,31 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import ContenedorApp from './componentes/layout/ContenedorApp';
+import AjustesPagina from './paginas/AjustesPagina';
 import InicioPagina from './paginas/InicioPagina';
+import LineasPagina from './paginas/LineasPagina';
 import MapaPagina from './paginas/MapaPagina';
+
+const paginas = {
+  rutas: InicioPagina,
+  mapa: MapaPagina,
+  lineas: LineasPagina,
+  ajustes: AjustesPagina
+};
 
 function App() {
   const [paginaActiva, setPaginaActiva] = useState('rutas');
 
-  function renderizarPagina() {
-    if (paginaActiva === 'mapa') {
-      return <MapaPagina />;
-    }
-
-    if (paginaActiva === 'lineas') {
-      return (
-        <section className="pagina-placeholder">
-          <p className="pagina-inicio__mini">Líneas</p>
-          <h1>Líneas</h1>
-          <p>Más adelante veremos todas las líneas, sentidos, paradas y horarios aproximados.</p>
-        </section>
-      );
-    }
-
-    if (paginaActiva === 'ajustes') {
-      return (
-        <section className="pagina-placeholder">
-          <p className="pagina-inicio__mini">Ajustes</p>
-          <h1>Ajustes</h1>
-          <p>Más adelante añadiremos preferencias, ubicación y configuración de la app.</p>
-        </section>
-      );
-    }
-
-    return <InicioPagina />;
-  }
+  const PaginaActiva = useMemo(() => {
+    return paginas[paginaActiva] || InicioPagina;
+  }, [paginaActiva]);
 
   return (
     <ContenedorApp
       paginaActiva={paginaActiva}
       onCambiarPagina={setPaginaActiva}
     >
-      {renderizarPagina()}
+      <PaginaActiva />
     </ContenedorApp>
   );
 }

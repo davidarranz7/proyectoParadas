@@ -1,17 +1,13 @@
-/* =========================================================
-   PANEL RUTA SELECCIONADA
-   ========================================================= */
-
 .panel-ruta-app {
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 30px;
   box-shadow: var(--sombra-flotante);
-  backdrop-filter: blur(22px);
+  backdrop-filter: blur(20px);
   overflow: hidden;
 }
 
@@ -22,8 +18,16 @@
   gap: 14px;
 }
 
+.panel-ruta-app__linea-hero {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
 .panel-ruta-app__mini {
-  margin: 0 0 4px;
+  margin-bottom: 4px;
   color: var(--color-principal);
   font-size: 0.72rem;
   font-weight: 900;
@@ -32,67 +36,107 @@
 }
 
 .panel-ruta-app__cabecera h2 {
-  margin: 0;
-  font-size: 1.45rem;
-  line-height: 1;
-  letter-spacing: -0.05em;
+  font-size: 1.4rem;
+  line-height: 1.05;
+}
+
+.panel-ruta-app__subtitulo {
+  display: block;
+  margin-top: 7px;
+  color: var(--color-texto-suave);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .panel-ruta-app__cerrar {
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
   color: var(--color-texto-suave);
-  background: rgba(248, 250, 252, 0.86);
-  border: 1px solid var(--color-borde);
+  background: rgba(22, 56, 77, 0.06);
+  border: 1px solid rgba(22, 56, 77, 0.08);
   border-radius: 15px;
 }
 
 .panel-ruta-app__resumen {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-.panel-ruta-app__resumen > div:not(.tiempo-real) {
-  min-height: 64px;
+.panel-ruta-app__dato,
+.panel-ruta-app__resumen .tiempo-real {
+  min-height: 74px;
   padding: 12px;
   display: grid;
   align-content: center;
-  background: rgba(248, 250, 252, 0.72);
-  border: 1px solid var(--color-borde);
-  border-radius: 19px;
+  background: rgba(255, 248, 244, 0.9);
+  border: 1px solid rgba(255, 107, 61, 0.1);
+  border-radius: 18px;
 }
 
-.panel-ruta-app__resumen strong {
-  font-family:
-    "Plus Jakarta Sans",
-    Inter,
-    sans-serif;
-  font-size: 1.16rem;
+.panel-ruta-app__dato strong {
+  font-family: Sora, Manrope, sans-serif;
+  font-size: 1.1rem;
   line-height: 1;
 }
 
-.panel-ruta-app__resumen span {
-  margin-top: 5px;
+.panel-ruta-app__dato span {
+  margin-top: 6px;
   color: var(--color-texto-suave);
   font-size: 0.72rem;
   font-weight: 800;
 }
 
+.panel-ruta-app__estado-live {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  background: rgba(22, 56, 77, 0.05);
+  border: 1px solid rgba(22, 56, 77, 0.08);
+  border-radius: 20px;
+}
+
+.panel-ruta-app__estado-live-icono {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--color-principal);
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 15px;
+}
+
+.panel-ruta-app__estado-live strong {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.panel-ruta-app__estado-live span {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-texto-suave);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
 .panel-ruta-app__mapa {
-  min-height: 280px;
+  min-height: 300px;
   overflow: hidden;
-  background: #edf3f8;
-  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-mapa);
+  border: 1px solid rgba(22, 56, 77, 0.08);
   border-radius: 24px;
 }
 
 .panel-ruta-app__mapa .leaflet-container {
   height: 100%;
-  min-height: 280px;
+  min-height: 300px;
   border-radius: 24px;
 }
 
@@ -102,7 +146,7 @@
 }
 
 .panel-ruta-app__vacio {
-  max-width: 300px;
+  max-width: 320px;
   display: grid;
   place-items: center;
   align-content: center;
@@ -116,17 +160,15 @@
 }
 
 .panel-ruta-app__vacio h3 {
-  margin: 0;
   color: var(--color-texto);
+  font-size: 1.1rem;
 }
 
 .panel-ruta-app__vacio p {
-  margin: 8px 0 0;
-  font-size: 0.88rem;
-  line-height: 1.45;
+  margin-top: 8px;
+  font-size: 0.86rem;
+  line-height: 1.5;
 }
-
-/* TIMELINE */
 
 .timeline-ruta {
   min-height: 0;
@@ -139,18 +181,18 @@
   position: relative;
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
-  gap: 11px;
+  gap: 12px;
   padding-bottom: 18px;
 }
 
 .timeline-ruta__paso::after {
-  content: "";
+  content: '';
   position: absolute;
   left: 20px;
   top: 42px;
   bottom: 0;
   width: 2px;
-  background: var(--color-borde);
+  background: rgba(22, 56, 77, 0.12);
   border-radius: 999px;
 }
 
@@ -168,8 +210,8 @@
   display: grid;
   place-items: center;
   color: var(--color-texto-suave);
-  background: rgba(248, 250, 252, 0.9);
-  border: 1px solid var(--color-borde);
+  background: rgba(255, 248, 244, 0.88);
+  border: 1px solid rgba(255, 107, 61, 0.1);
   border-radius: 16px;
   z-index: 1;
 }
@@ -177,16 +219,14 @@
 .timeline-ruta__paso--activo .timeline-ruta__icono {
   color: #ffffff;
   background: linear-gradient(135deg, var(--color-principal), var(--color-principal-oscuro));
-  border-color: rgba(9, 105, 218, 0.18);
-  box-shadow: 0 12px 22px rgba(9, 105, 218, 0.2);
+  box-shadow: var(--sombra-resalte);
 }
 
 .timeline-ruta__paso strong {
   display: block;
   padding-top: 2px;
-  color: var(--color-texto);
-  font-size: 0.88rem;
-  font-weight: 900;
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
 .timeline-ruta__paso span {
@@ -194,6 +234,6 @@
   margin-top: 4px;
   color: var(--color-texto-suave);
   font-size: 0.8rem;
-  line-height: 1.35;
-  font-weight: 650;
+  line-height: 1.45;
+  font-weight: 700;
 }

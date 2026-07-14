@@ -18,7 +18,7 @@ const opcionesBarra = [
   },
   {
     id: 'lineas',
-    texto: 'Líneas',
+    texto: 'Lineas',
     icono: MapPinned
   },
   {
@@ -30,7 +30,7 @@ const opcionesBarra = [
 
 function BarraInferior({ paginaActiva, onCambiarPagina }) {
   return (
-    <nav className="barra-inferior" aria-label="Navegación inferior">
+    <nav className="barra-inferior" aria-label="Navegacion inferior">
       {opcionesBarra.map((opcion) => {
         const Icono = opcion.icono;
         const activo = paginaActiva === opcion.id;
@@ -53,6 +53,8 @@ function BarraInferior({ paginaActiva, onCambiarPagina }) {
             <span className="barra-inferior__texto">
               {opcion.texto}
             </span>
+
+            {activo && <span className="barra-inferior__marca-activa" />}
           </button>
         );
       })}

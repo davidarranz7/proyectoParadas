@@ -1,73 +1,58 @@
-/* =========================================================
-   INFOBUS
-   Número de minutos, colores y lista de próximos buses
-   ========================================================= */
-
 .indicador-infobus {
-  width: 31px;
-  height: 31px;
+  width: 32px;
+  height: 32px;
   display: inline-grid;
   place-items: center;
-  flex: 0 0 auto;
   color: #ffffff;
   border-radius: 999px;
   font-size: 0.82rem;
-  font-weight: 950;
+  font-weight: 900;
   line-height: 1;
   animation: parpadeo-infobus 1.15s ease-in-out infinite;
 }
 
 .indicador-infobus--verde {
-  background: #16a34a;
-  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.55);
+  background: var(--color-verde);
 }
 
 .indicador-infobus--naranja {
-  background: #f97316;
-  box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.55);
+  background: var(--color-naranja);
 }
 
 .indicador-infobus--rojo {
-  background: #dc2626;
-  box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6);
+  background: var(--color-rojo);
 }
 
 @keyframes parpadeo-infobus {
-  0% {
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
 
   50% {
     transform: scale(1.08);
-    opacity: 0.72;
-  }
-
-  100% {
-    transform: scale(1);
-    opacity: 1;
+    opacity: 0.76;
   }
 }
 
 .boton-infobus {
   margin-top: 8px;
   width: 100%;
-  min-height: 34px;
+  min-height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
   color: #ffffff;
-  background: var(--color-principal);
-  border: 0;
-  border-radius: 12px;
+  background: linear-gradient(135deg, var(--color-principal), var(--color-principal-oscuro));
+  border-radius: 13px;
   font-size: 0.8rem;
-  font-weight: 850;
+  font-weight: 800;
 }
 
 .boton-infobus:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
+  opacity: 0.6;
 }
 
 .popup-infobus-lista {
@@ -82,7 +67,8 @@
   grid-template-columns: 34px 1fr;
   gap: 8px;
   align-items: center;
-  background: #f8fafc;
+  background: #f6f9fb;
+  border: 1px solid rgba(22, 56, 77, 0.08);
   border-radius: 12px;
 }
 
@@ -92,7 +78,7 @@
   display: grid;
   place-items: center;
   color: #ffffff;
-  background: var(--color-principal);
+  background: linear-gradient(135deg, var(--color-principal), var(--color-principal-oscuro));
   border-radius: 10px;
   font-size: 0.75rem;
   font-weight: 900;
@@ -108,7 +94,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #6b7280;
+  color: var(--color-texto-suave);
   font-size: 0.7rem;
-  font-weight: 750;
+  font-weight: 700;
 }

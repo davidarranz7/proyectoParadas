@@ -1,86 +1,120 @@
-/* =========================================================
-   MAPA GENERAL
-   Pantalla con todas las paradas e InfoBus por parada
-   ========================================================= */
-
 .pagina-mapa {
   width: 100%;
-  height: calc(100vh - 48px);
-  min-height: 680px;
+  min-height: calc(100vh - 122px);
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 14px;
+  gap: 12px;
 }
-
-/* =========================
-   CABECERA MAPA
-   ========================= */
 
 .pagina-mapa__cabecera {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 18px;
-  padding: 18px 20px;
-  background: #ffffff;
-  border: 1px solid var(--color-borde);
-  border-radius: 22px;
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.74);
+  border-radius: 28px;
   box-shadow: var(--sombra-panel);
+  backdrop-filter: blur(18px);
 }
 
-.pagina-mapa__cabecera h1 {
-  margin: 0;
-  font-size: clamp(1.8rem, 3vw, 2.65rem);
-  line-height: 1;
-  letter-spacing: -0.055em;
+.pagina-mapa__headline h1 {
+  margin-top: 8px;
+  max-width: 16ch;
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  line-height: 0.96;
 }
 
-.pagina-mapa__cabecera p:last-child {
-  max-width: 620px;
-  margin: 8px 0 0;
+.pagina-mapa__headline p:last-child {
+  margin-top: 12px;
+  max-width: 64ch;
   color: var(--color-texto-suave);
   font-size: 0.9rem;
-  line-height: 1.4;
+  line-height: 1.55;
+}
+
+.pagina-mapa__acciones-superiores {
+  display: grid;
+  gap: 10px;
+}
+
+.pagina-mapa__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .boton-mi-ubicacion {
-  min-height: 42px;
-  padding: 0 15px;
+  min-height: 48px;
+  padding: 0 16px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   color: #ffffff;
-  background: var(--color-principal);
-  border: 0;
-  border-radius: 14px;
-  font-size: 0.86rem;
-  font-weight: 900;
-  box-shadow: 0 12px 24px rgba(9, 105, 218, 0.22);
-  flex: 0 0 auto;
+  background: linear-gradient(135deg, var(--color-principal), var(--color-principal-oscuro));
+  border-radius: 17px;
+  box-shadow: var(--sombra-resalte);
+  font-size: 0.88rem;
+  font-weight: 800;
 }
 
-.boton-mi-ubicacion:hover {
-  background: var(--color-principal-oscuro);
+.pagina-mapa__resumen {
+  display: grid;
+  gap: 10px;
 }
 
-/* =========================
-   CONTENEDOR MAPA
-   ========================= */
+.pagina-mapa__dato {
+  min-height: 78px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 22px;
+  box-shadow: var(--sombra-panel);
+  backdrop-filter: blur(16px);
+}
+
+.pagina-mapa__dato-icono {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--color-principal);
+  background: var(--color-principal-suave);
+  border-radius: 15px;
+}
+
+.pagina-mapa__dato strong {
+  display: block;
+  font-family: Sora, Manrope, sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.pagina-mapa__dato span {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-texto-suave);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
 
 .mapa-general {
   position: relative;
-  min-height: 0;
+  min-height: 580px;
   overflow: hidden;
-  background: #ffffff;
-  border: 1px solid var(--color-borde);
-  border-radius: 24px;
-  box-shadow: var(--sombra-panel);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 30px;
+  box-shadow: var(--sombra-flotante);
 }
 
 .mapa-general__leaflet {
   width: 100%;
   height: 100%;
-  min-height: 0;
+  min-height: 580px;
   z-index: 1;
 }
 
@@ -91,27 +125,26 @@
   left: 50%;
   z-index: 700;
   transform: translateX(-50%);
-  padding: 7px 13px;
-  color: var(--color-principal);
-  background: #ffffff;
-  border: 1px solid var(--color-borde);
-  border-radius: 999px;
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.14);
+  min-height: 36px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-secundario);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(22, 56, 77, 0.08);
+  border-radius: var(--radio-pill);
+  box-shadow: 0 12px 24px rgba(31, 26, 34, 0.12);
   font-size: 0.76rem;
-  font-weight: 900;
+  font-weight: 800;
   white-space: nowrap;
 }
-
-/* =========================
-   MARCADORES MAPA GENERAL
-   ========================= */
 
 .marcador-mapa-general {
   display: grid;
   place-items: center;
   background: rgba(255, 255, 255, 0.96);
   border-radius: 999px;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 8px 18px rgba(31, 26, 34, 0.18);
 }
 
 .marcador-mapa-general span {
@@ -119,7 +152,6 @@
   border-radius: 999px;
 }
 
-/* Parada normal: más pequeña para no ensuciar tanto */
 .marcador-mapa-general--parada {
   border: 2px solid var(--color-principal);
 }
@@ -130,120 +162,91 @@
   background: var(--color-principal);
 }
 
-/* Parada seleccionada */
 .marcador-mapa-general--seleccionada {
-  border: 4px solid #f97316;
-  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.3);
+  border: 4px solid var(--color-naranja);
+  box-shadow: 0 10px 22px rgba(255, 157, 45, 0.28);
 }
 
 .marcador-mapa-general--seleccionada span {
   width: 9px;
   height: 9px;
-  background: #f97316;
+  background: var(--color-naranja);
 }
 
-/* Ubicación usuario */
 .marcador-mapa-general--usuario {
-  border: 4px solid #16a34a;
-  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.32);
+  border: 4px solid var(--color-verde);
+  box-shadow: 0 10px 22px rgba(31, 184, 116, 0.28);
 }
 
 .marcador-mapa-general--usuario span {
   width: 9px;
   height: 9px;
-  background: #16a34a;
+  background: var(--color-verde);
 }
-
-/* =========================
-   POPUP PEQUEÑO LEAFLET
-   ========================= */
-
-.popup-parada {
-  min-width: 170px;
-  display: grid;
-  gap: 4px;
-}
-
-.popup-parada strong {
-  color: var(--color-texto);
-  font-size: 0.86rem;
-  font-weight: 950;
-}
-
-.popup-parada span {
-  color: #4b5563;
-  font-size: 0.72rem;
-  font-weight: 700;
-}
-
-/* =========================
-   PANEL INFOBUS
-   ========================= */
 
 .panel-infobus {
   position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
   z-index: 800;
-  top: 14px;
-  right: 14px;
-  width: min(360px, calc(100% - 28px));
-  max-height: calc(100% - 28px);
+  max-height: 62%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #ffffff;
-  border: 1px solid var(--color-borde);
-  border-radius: 22px;
-  box-shadow: 0 22px 54px rgba(15, 23, 42, 0.24);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 28px;
+  box-shadow: 0 26px 60px rgba(31, 26, 34, 0.22);
+  backdrop-filter: blur(18px);
 }
 
 .panel-infobus__cerrar {
   position: absolute;
-  top: 11px;
-  right: 11px;
+  top: 12px;
+  right: 12px;
   z-index: 2;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   color: var(--color-texto-suave);
-  background: #f8fafc;
-  border: 1px solid var(--color-borde);
+  background: rgba(22, 56, 77, 0.06);
+  border: 1px solid rgba(22, 56, 77, 0.08);
   border-radius: 999px;
 }
 
 .panel-infobus__cabecera {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 11px;
-  padding: 17px 54px 14px 16px;
-  border-bottom: 1px solid var(--color-borde);
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 12px;
+  padding: 18px 56px 14px 16px;
+  border-bottom: 1px solid rgba(22, 56, 77, 0.08);
 }
 
 .panel-infobus__icono {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   color: #ffffff;
-  background: var(--color-principal);
-  border-radius: 15px;
+  background: linear-gradient(135deg, var(--color-principal), var(--color-principal-oscuro));
+  border-radius: 16px;
+  box-shadow: var(--sombra-resalte);
 }
 
 .panel-infobus__cabecera p {
-  margin: 0 0 4px;
-  color: var(--color-texto-suave);
-  font-size: 0.66rem;
-  font-weight: 950;
-  text-transform: uppercase;
+  color: var(--color-texto-apagado);
+  font-size: 0.68rem;
+  font-weight: 900;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .panel-infobus__cabecera h2 {
-  margin: 0;
-  color: var(--color-texto);
+  margin-top: 4px;
   font-size: 1.02rem;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
+  line-height: 1.2;
 }
 
 .panel-infobus__cabecera span {
@@ -255,86 +258,81 @@
 }
 
 .panel-infobus__acciones {
-  padding: 11px 16px;
-  border-bottom: 1px solid var(--color-borde);
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(22, 56, 77, 0.08);
 }
 
 .panel-infobus__acciones button {
-  min-height: 36px;
   width: 100%;
+  min-height: 40px;
   display: inline-flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   color: #ffffff;
-  background: var(--color-principal);
-  border: 0;
-  border-radius: 13px;
-  font-size: 0.82rem;
-  font-weight: 900;
+  background: linear-gradient(135deg, var(--color-secundario), #275d79);
+  border-radius: 14px;
+  font-size: 0.84rem;
+  font-weight: 800;
 }
 
 .panel-infobus__acciones button:disabled {
-  opacity: 0.65;
+  opacity: 0.55;
 }
 
 .panel-infobus__mensaje,
 .panel-infobus__error,
 .panel-infobus__vacio {
   margin: 12px 16px;
-  padding: 11px;
-  border-radius: 13px;
+  padding: 12px;
+  border-radius: 14px;
   font-size: 0.82rem;
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .panel-infobus__mensaje {
-  color: var(--color-principal);
-  background: var(--color-principal-suave);
+  color: var(--color-secundario);
+  background: var(--color-secundario-suave);
 }
 
 .panel-infobus__error {
-  color: #b91c1c;
-  background: #fff1f2;
+  color: var(--color-rojo);
+  background: var(--color-rojo-suave);
 }
 
 .panel-infobus__vacio {
   color: var(--color-texto-suave);
-  background: #f8fafc;
+  background: #f2f5f8;
 }
-
-/* =========================
-   LISTA BUSES INFOBUS
-   ========================= */
 
 .panel-infobus__lista {
   overflow-y: auto;
   display: grid;
-  gap: 9px;
+  gap: 10px;
   padding: 12px 16px 16px;
 }
 
 .panel-infobus__item {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-columns: 46px minmax(0, 1fr);
   gap: 10px;
   align-items: center;
-  padding: 10px;
-  background: #f8fafc;
-  border: 1px solid var(--color-borde);
-  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255, 248, 244, 0.84);
+  border: 1px solid rgba(255, 107, 61, 0.08);
+  border-radius: 18px;
 }
 
 .panel-infobus__linea {
-  min-width: 40px;
-  height: 38px;
+  min-width: 42px;
+  height: 40px;
   display: grid;
   place-items: center;
   color: #ffffff;
-  background: var(--color-principal);
-  border-radius: 13px;
+  background: linear-gradient(135deg, var(--color-principal), var(--color-principal-oscuro));
+  border-radius: 14px;
   font-size: 0.82rem;
-  font-weight: 950;
+  font-weight: 900;
 }
 
 .panel-infobus__datos {
@@ -343,135 +341,81 @@
 
 .panel-infobus__datos strong {
   display: block;
-  color: var(--color-texto);
-  font-size: 0.83rem;
-  font-weight: 950;
-  line-height: 1.22;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.3;
 }
 
 .panel-infobus__datos small {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin-top: 4px;
+  margin-top: 5px;
   color: var(--color-texto-suave);
   font-size: 0.72rem;
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .panel-infobus__minutos {
-  min-width: 52px;
+  grid-column: 2;
+  justify-self: start;
+  min-width: 56px;
   height: 34px;
-  padding: 0 9px;
-  display: grid;
-  place-items: center;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: #ffffff;
-  background: var(--color-principal);
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 950;
+  background: linear-gradient(135deg, var(--color-secundario), #275d79);
+  border-radius: var(--radio-pill);
+  font-size: 0.76rem;
+  font-weight: 900;
   white-space: nowrap;
 }
 
 .panel-infobus__minutos--verde {
-  background: #16a34a;
+  background: var(--color-verde);
 }
 
 .panel-infobus__minutos--naranja {
-  background: #f97316;
+  background: var(--color-naranja);
 }
 
 .panel-infobus__minutos--rojo {
-  background: #dc2626;
+  background: var(--color-rojo);
 }
 
-/* =========================
-   RESPONSIVE MAPA GENERAL
-   ========================= */
-
-@media (max-width: 900px) {
-  .pagina-mapa {
-    height: calc(100vh - 120px);
-    min-height: 620px;
-  }
-
-  .pagina-mapa__cabecera {
-    padding: 16px;
-    border-radius: 20px;
-  }
-
-  .pagina-mapa__cabecera h1 {
-    font-size: 1.95rem;
-  }
-
-  .pagina-mapa__cabecera p:last-child {
-    font-size: 0.86rem;
-  }
-
-  .mapa-general {
-    border-radius: 20px;
-  }
-
-  .panel-infobus {
-    top: auto;
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    width: auto;
-    max-height: 58%;
-    border-radius: 22px;
-  }
-}
-
-@media (max-width: 560px) {
-  .pagina-mapa {
-    height: calc(100vh - 112px);
-    min-height: 560px;
-    gap: 10px;
-  }
-
-  .pagina-mapa__cabecera {
-    display: grid;
-    gap: 12px;
-  }
-
-  .pagina-mapa__cabecera h1 {
-    font-size: 1.65rem;
-  }
-
-  .boton-mi-ubicacion {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .mapa-general__contador {
-    top: 10px;
-    font-size: 0.7rem;
-  }
-
-  .panel-infobus {
-    max-height: 62%;
-  }
-
-  .panel-infobus__cabecera {
-    grid-template-columns: 40px minmax(0, 1fr);
-    padding: 15px 52px 13px 14px;
-  }
-
-  .panel-infobus__icono {
-    width: 40px;
-    height: 40px;
+@media (min-width: 720px) {
+  .pagina-mapa__resumen {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .panel-infobus__item {
-    grid-template-columns: 40px minmax(0, 1fr);
-    gap: 9px;
+    grid-template-columns: 46px minmax(0, 1fr) auto;
   }
 
   .panel-infobus__minutos {
-    grid-column: 2;
-    justify-self: start;
-    min-width: 48px;
-    height: 32px;
+    grid-column: auto;
+    justify-self: end;
+  }
+}
+
+@media (min-width: 1040px) {
+  .pagina-mapa__cabecera {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .pagina-mapa__acciones-superiores {
+    justify-items: end;
+  }
+
+  .panel-infobus {
+    top: 14px;
+    right: 14px;
+    left: auto;
+    bottom: auto;
+    width: min(380px, calc(100% - 28px));
+    max-height: calc(100% - 28px);
   }
 }

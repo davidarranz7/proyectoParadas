@@ -279,6 +279,8 @@ function SelectorLugar({
           onFocus={() => setAbierto(true)}
           onKeyDown={manejarTecla}
           placeholder={placeholder}
+          autoComplete="off"
+          aria-expanded={abierto}
         />
 
         {texto && (
@@ -306,8 +308,8 @@ function SelectorLugar({
               </span>
 
               <span>
-                <strong>Usar mi ubicación actual</strong>
-                <small>Permitir ubicación exacta del dispositivo</small>
+                <strong>Usar mi ubicacion actual</strong>
+                <small>Permitir ubicacion exacta del dispositivo</small>
               </span>
             </button>
           )}
@@ -330,7 +332,7 @@ function SelectorLugar({
           {mostrarHistorial && (
             <>
               <p className="selector-lugar__titulo-lista">
-                Búsquedas recientes
+                Busquedas recientes
               </p>
 
               {historial.map((lugar, indice) => (
@@ -373,7 +375,7 @@ function SelectorLugar({
 
               {!buscandoSugerencias && !errorBusqueda && sugerencias.length === 0 && (
                 <p className="selector-lugar__sin-resultados">
-                  Pulsa Enter para buscar y seleccionar automáticamente.
+                  Pulsa Enter para buscar y seleccionar automaticamente.
                 </p>
               )}
 
