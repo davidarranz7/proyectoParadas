@@ -1,710 +1,632 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ArrowRight,
   BusFront,
-  Clock,
+  Clock3,
   Footprints,
-  MapPin,
+  LocateFixed,
+  Loader2,
+  MapPinned,
+  Navigation,
+  RefreshCw,
   Route,
-  Search
+  Search,
+  Sparkles,
+  X
 } from 'lucide-react';
 
 import SelectorLugar from '../componentes/comunes/SelectorLugar';
-import { buscarLugaresPorTexto } from '../servicios/lugaresServicio';
-import { buscarRutasDirectas } from '../servicios/rutasServicio';
-import { obtenerInfoBusParada } from '../servicios/infobusServicio';
 import MapaRuta from '../componentes/mapa/MapaRuta';
+import { buscarRutas } from '../servicios/rutasServicio';
 
-function obtenerFechaHoy() {
-  const fecha = new Date();
-
-  const anyo = fecha.getFullYear();
-  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-  const dia = String(fecha.getDate()).padStart(2, '0');
-
-  return `${anyo}-${mes}-${dia}`;
+function obtenerFechaActual() {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function obtenerHoraActual() {
   const fecha = new Date();
-
   const horas = String(fecha.getHours()).padStart(2, '0');
   const minutos = String(fecha.getMinutes()).padStart(2, '0');
+  const segundos = String(fecha.getSeconds()).padStart(2, '0');
 
-  return `${horas}:${minutos}:00`;
+  return `${horas}:${minutos}:${segundos}`;
 }
 
-function obtenerMensajeErrorUbicacion(error) {
-  if (error.code === 1) {
-    return 'Has rechazado el permiso de ubicación.';
-  }
-
-  if (error.code === 2) {
-    return 'No se pudo obtener tu ubicación actual.';
-  }
-
-  if (error.code === 3) {
-    return 'La ubicación está tardando demasiado. Inténtalo otra vez.';
-  }
-
-  return 'No se pudo obtener tu ubicación.';
+function obtenerNombreLugar(lugar) {
+  return lugar?.nombre || lugar?.displayName || lugar?.direccion || 'Lugar seleccionado';
 }
 
-function normalizarLugarBackend(lugar, indice) {
-  return {
-    id: `${lugar.fuente || 'backend'}-${lugar.lat}-${lugar.lon}-${indice}`,
-    nombre: lugar.nombre,
-    descripcion: lugar.direccion,
-    lat: lugar.lat,
-    lon: lugar.lon,
-    tipo: 'lugar',
-    fuente: lugar.fuente || 'backend'
-  };
+function obtenerDireccionLugar(lugar) {
+  return lugar?.direccion || lugar?.address || lugar?.fuente || '';
 }
 
-function obtenerHistorial(claveHistorial) {
-  try {
-    const historialGuardado = localStorage.getItem(claveHistorial);
-
-    if (!historialGuardado) {
-      return [];
-    }
-
-    const historial = JSON.parse(historialGuardado);
-
-    return Array.isArray(historial) ? historial : [];
-  } catch {
-    return [];
-  }
-}
-
-function guardarEnHistorial(claveHistorial, lugar) {
-  if (!lugar) {
-    return;
-  }
-
-  const historialActual = obtenerHistorial(claveHistorial);
-
-  const historialSinRepetidos = historialActual.filter((item) => {
-    const mismoNombre = item.nombre === lugar.nombre;
-    const mismaLat = Number(item.lat) === Number(lugar.lat);
-    const mismaLon = Number(item.lon) === Number(lugar.lon);
-
-    return !(mismoNombre && mismaLat && mismaLon);
-  });
-
-  const nuevoHistorial = [
-    lugar,
-    ...historialSinRepetidos
-  ].slice(0, 6);
-
-  localStorage.setItem(claveHistorial, JSON.stringify(nuevoHistorial));
-}
-
-async function resolverLugarDesdeTexto({
-  lugarSeleccionado,
-  texto,
-  tipoLugar
-}) {
-  if (lugarSeleccionado) {
-    return lugarSeleccionado;
-  }
-
-  const textoLimpio = texto.trim();
-
-  if (!textoLimpio) {
-    throw new Error(
-      tipoLugar === 'origen'
-        ? 'Selecciona un origen o usa tu ubicación actual.'
-        : 'Escribe un destino para buscar una ruta.'
-    );
-  }
-
-  const resultados = await buscarLugaresPorTexto(textoLimpio);
-
-  if (!resultados || resultados.length === 0) {
-    throw new Error(`No encontramos ningún resultado para "${textoLimpio}".`);
-  }
-
-  const mejorResultado = normalizarLugarBackend(resultados[0], 0);
-
-  guardarEnHistorial(`paradabus_historial_${tipoLugar}`, mejorResultado);
-
-  return mejorResultado;
-}
-
-function obtenerListaInfoBus(respuesta) {
+function obtenerOpcionesRespuesta(respuesta) {
   if (Array.isArray(respuesta)) {
     return respuesta;
   }
 
-  return (
-    respuesta?.proximosBuses ||
-    respuesta?.proximosBus ||
-    respuesta?.proximos ||
-    respuesta?.buses ||
-    respuesta?.resultados ||
-    respuesta?.llegadas ||
-    []
-  );
+  if (Array.isArray(respuesta?.opciones)) {
+    return respuesta.opciones;
+  }
+
+  if (Array.isArray(respuesta?.rutas)) {
+    return respuesta.rutas;
+  }
+
+  if (Array.isArray(respuesta?.resultados)) {
+    return respuesta.resultados;
+  }
+
+  return [];
 }
 
-function normalizarLinea(valor) {
-  return String(valor || '')
-    .toLowerCase()
-    .replace(/\s+/g, '')
-    .trim();
-}
+function obtenerMinutosInfoBus(ruta) {
+  const posiblesValores = [
+    ruta?.minutosInfoBus,
+    ruta?.minutosTiempoReal,
+    ruta?.minutosEsperaReal,
+    ruta?.minutosEspera,
+    ruta?.siguientesSalidas?.[0]?.minutos,
+    ruta?.siguientesSalidas?.[0]?.minutosHastaSalida
+  ];
 
-function buscarTiempoInfoBusParaLinea(respuesta, lineaRuta) {
-  const lista = obtenerListaInfoBus(respuesta);
-  const lineaNormalizada = normalizarLinea(lineaRuta);
+  const valor = posiblesValores.find((item) => item !== undefined && item !== null);
 
-  const busEncontrado = lista.find((item) => {
-    return normalizarLinea(item.linea) === lineaNormalizada;
-  });
-
-  if (!busEncontrado) {
+  if (valor === undefined || valor === null || Number.isNaN(Number(valor))) {
     return null;
   }
 
-  const minutos = Number(busEncontrado.minutos);
+  return Number(valor);
+}
 
-  if (!Number.isFinite(minutos)) {
-    return null;
+function obtenerClaseMinutos(minutos) {
+  if (minutos === null || minutos === undefined) {
+    return 'tiempo-real--gris';
   }
 
-  return {
-    minutos,
-    linea: busEncontrado.linea,
-    ruta: busEncontrado.ruta
-  };
-}
-
-function generarClaveOpcion(opcion, indice) {
-  return `${opcion.linea}-${opcion.tripId}-${opcion.paradaOrigen?.id || 'sin-parada'}-${indice}`;
-}
-
-function obtenerColorTiempoInfoBus(minutos) {
   if (minutos <= 3) {
-    return 'rojo';
+    return 'tiempo-real--rojo';
   }
 
   if (minutos <= 5) {
-    return 'naranja';
+    return 'tiempo-real--naranja';
   }
 
-  return 'verde';
+  return 'tiempo-real--verde';
 }
 
-function IndicadorInfoBus({ tiempo }) {
-  if (!tiempo || tiempo.minutos === undefined || tiempo.minutos === null) {
+function obtenerTextoHora(hora) {
+  if (!hora) {
+    return '--:--';
+  }
+
+  return String(hora).slice(0, 5);
+}
+
+function obtenerLineaRuta(ruta) {
+  return ruta?.linea || ruta?.codigoLinea || ruta?.routeShortName || 'BUS';
+}
+
+function obtenerTipoRuta(ruta) {
+  if (ruta?.transbordos && ruta.transbordos > 0) {
+    return `${ruta.transbordos} transbordo${ruta.transbordos > 1 ? 's' : ''}`;
+  }
+
+  if (String(ruta?.tipo || '').toUpperCase().includes('TRANSBORDO')) {
+    return 'Con transbordo';
+  }
+
+  return 'Directa';
+}
+
+function formatearMetros(metros) {
+  if (!metros && metros !== 0) {
     return null;
   }
 
-  const color = obtenerColorTiempoInfoBus(tiempo.minutos);
+  if (metros >= 1000) {
+    return `${(metros / 1000).toFixed(1)} km`;
+  }
+
+  return `${Math.round(metros)} m`;
+}
+
+function TarjetaRuta({ ruta, activa, indice, onSeleccionar }) {
+  const minutosInfoBus = obtenerMinutosInfoBus(ruta);
+  const claseMinutos = obtenerClaseMinutos(minutosInfoBus);
+  const linea = obtenerLineaRuta(ruta);
+  const tipoRuta = obtenerTipoRuta(ruta);
+  const caminata = ruta?.distanciaAndandoTotalMetros
+    ? formatearMetros(ruta.distanciaAndandoTotalMetros)
+    : null;
 
   return (
-    <span
-      className={`indicador-infobus indicador-infobus--${color}`}
-      title={`InfoBus: ${tiempo.minutos} minutos`}
+    <button
+      type="button"
+      className={
+        activa
+          ? 'tarjeta-ruta tarjeta-ruta--activa'
+          : 'tarjeta-ruta'
+      }
+      onClick={onSeleccionar}
     >
-      {tiempo.minutos}
-    </span>
+      {indice === 0 && (
+        <span className="tarjeta-ruta__badge">
+          Mejor opción
+        </span>
+      )}
+
+      <div className="tarjeta-ruta__superior">
+        <div className="tarjeta-ruta__tiempo">
+          <BusFront size={20} />
+          <strong>{ruta?.minutosTotal ?? '--'}</strong>
+          <span>min</span>
+        </div>
+
+        <div className={`tiempo-real ${claseMinutos}`}>
+          <span>{minutosInfoBus ?? '--'}</span>
+          <small>min</small>
+        </div>
+      </div>
+
+      <div className="tarjeta-ruta__linea">
+        <span className="linea-bus-pill">
+          {linea}
+        </span>
+
+        <span className="tarjeta-ruta__tipo">
+          {tipoRuta}
+        </span>
+
+        {caminata && (
+          <span className="tarjeta-ruta__dato">
+            <Footprints size={14} />
+            {caminata}
+          </span>
+        )}
+      </div>
+
+      <div className="tarjeta-ruta__horas">
+        <span>
+          Sale {obtenerTextoHora(ruta?.horaSalidaBus || ruta?.horaInicioRuta)}
+        </span>
+
+        <ArrowRight size={15} />
+
+        <span>
+          Llega {obtenerTextoHora(ruta?.horaLlegadaFinal || ruta?.horaLlegadaBus)}
+        </span>
+      </div>
+
+      {ruta?.resumen && (
+        <p className="tarjeta-ruta__resumen">
+          {ruta.resumen}
+        </p>
+      )}
+    </button>
+  );
+}
+
+function EstadoVacioRutas() {
+  return (
+    <div className="estado-rutas-vacio">
+      <div className="estado-rutas-vacio__icono">
+        <Search size={22} />
+      </div>
+
+      <h3>Busca tu ruta</h3>
+      <p>
+        Elige origen y destino para ver las mejores opciones en bus por Vigo.
+      </p>
+    </div>
+  );
+}
+
+function PanelRutaSeleccionada({ ruta, origen, destino, onCerrar }) {
+  if (!ruta) {
+    return (
+      <aside className="panel-ruta-app panel-ruta-app--vacio">
+        <div className="panel-ruta-app__vacio">
+          <MapPinned size={24} />
+          <h3>Selecciona una ruta</h3>
+          <p>
+            Al elegir una opción verás aquí el resumen, el mapa y los pasos del viaje.
+          </p>
+        </div>
+      </aside>
+    );
+  }
+
+  const minutosInfoBus = obtenerMinutosInfoBus(ruta);
+  const claseMinutos = obtenerClaseMinutos(minutosInfoBus);
+  const linea = obtenerLineaRuta(ruta);
+
+  return (
+    <aside className="panel-ruta-app panel-ruta-app--visible">
+      <div className="panel-ruta-app__cabecera">
+        <div>
+          <p className="panel-ruta-app__mini">Ruta seleccionada</p>
+          <h2>
+            Línea {linea}
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          className="panel-ruta-app__cerrar"
+          onClick={onCerrar}
+          aria-label="Cerrar ruta seleccionada"
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      <div className="panel-ruta-app__resumen">
+        <div>
+          <strong>{ruta?.minutosTotal ?? '--'} min</strong>
+          <span>Tiempo total</span>
+        </div>
+
+        <div>
+          <strong>{obtenerTextoHora(ruta?.horaLlegadaFinal || ruta?.horaLlegadaBus)}</strong>
+          <span>Llegada</span>
+        </div>
+
+        <div className={`tiempo-real ${claseMinutos}`}>
+          <span>{minutosInfoBus ?? '--'}</span>
+          <small>min</small>
+        </div>
+      </div>
+
+      <div className="panel-ruta-app__mapa">
+        <MapaRuta
+          ruta={ruta}
+          rutaSeleccionada={ruta}
+          origen={origen}
+          destino={destino}
+        />
+      </div>
+
+      <div className="timeline-ruta">
+        <div className="timeline-ruta__paso">
+          <div className="timeline-ruta__icono">
+            <Footprints size={17} />
+          </div>
+
+          <div>
+            <strong>Camina hasta la parada</strong>
+            <span>
+              {ruta?.minutosAndandoOrigen ?? '--'} min hasta {ruta?.paradaOrigen?.nombre || 'la parada de salida'}
+            </span>
+          </div>
+        </div>
+
+        <div className="timeline-ruta__paso timeline-ruta__paso--activo">
+          <div className="timeline-ruta__icono">
+            <BusFront size={17} />
+          </div>
+
+          <div>
+            <strong>Coge la línea {linea}</strong>
+            <span>
+              Sale a las {obtenerTextoHora(ruta?.horaSalidaBus)} · {ruta?.minutosBus ?? '--'} min en bus
+            </span>
+          </div>
+        </div>
+
+        <div className="timeline-ruta__paso">
+          <div className="timeline-ruta__icono">
+            <MapPinned size={17} />
+          </div>
+
+          <div>
+            <strong>Baja en la parada</strong>
+            <span>
+              {ruta?.paradaDestino?.nombre || 'Parada de destino'}
+            </span>
+          </div>
+        </div>
+
+        <div className="timeline-ruta__paso">
+          <div className="timeline-ruta__icono">
+            <Navigation size={17} />
+          </div>
+
+          <div>
+            <strong>Camina hasta tu destino</strong>
+            <span>
+              {ruta?.minutosAndandoDestino ?? '--'} min hasta {obtenerNombreLugar(destino)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </aside>
   );
 }
 
 function InicioPagina() {
-  const [textoOrigen, setTextoOrigen] = useState('');
-  const [textoDestino, setTextoDestino] = useState('');
-
   const [origenSeleccionado, setOrigenSeleccionado] = useState(null);
   const [destinoSeleccionado, setDestinoSeleccionado] = useState(null);
-
-  const [buscando, setBuscando] = useState(false);
-  const [resolviendoLugares, setResolviendoLugares] = useState(false);
-  const [cargandoUbicacion, setCargandoUbicacion] = useState(false);
-
-  const [resultado, setResultado] = useState(null);
+  const [rutas, setRutas] = useState([]);
   const [rutaSeleccionada, setRutaSeleccionada] = useState(null);
-  const [tiemposInfoBus, setTiemposInfoBus] = useState({});
-
+  const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
-  const [errorUbicacion, setErrorUbicacion] = useState('');
 
-  const opciones = resultado?.opciones || [];
-  const rutaPanel = rutaSeleccionada;
+  const puedeBuscar = Boolean(
+    origenSeleccionado?.lat &&
+    origenSeleccionado?.lon &&
+    destinoSeleccionado?.lat &&
+    destinoSeleccionado?.lon
+  );
 
-  function limpiarResultados() {
-    setResultado(null);
+  const resumenBusqueda = useMemo(() => {
+    if (!origenSeleccionado && !destinoSeleccionado) {
+      return 'Origen y destino pendientes';
+    }
+
+    if (!origenSeleccionado) {
+      return 'Falta elegir origen';
+    }
+
+    if (!destinoSeleccionado) {
+      return 'Falta elegir destino';
+    }
+
+    return `${obtenerNombreLugar(origenSeleccionado)} → ${obtenerNombreLugar(destinoSeleccionado)}`;
+  }, [origenSeleccionado, destinoSeleccionado]);
+
+  function limpiarRutas() {
+    setRutas([]);
     setRutaSeleccionada(null);
-    setTiemposInfoBus({});
   }
 
-  function cambiarOrigen(lugar) {
+  function manejarSeleccionOrigen(lugar) {
     setOrigenSeleccionado(lugar);
-    setTextoOrigen(lugar?.nombre || '');
     setError('');
-    limpiarResultados();
+    limpiarRutas();
   }
 
-  function cambiarDestino(lugar) {
+  function manejarSeleccionDestino(lugar) {
     setDestinoSeleccionado(lugar);
-    setTextoDestino(lugar?.nombre || '');
     setError('');
-    limpiarResultados();
+    limpiarRutas();
   }
 
-  function cambiarTextoOrigen(texto) {
-    setTextoOrigen(texto);
-    setError('');
-    limpiarResultados();
-  }
-
-  function cambiarTextoDestino(texto) {
-    setTextoDestino(texto);
-    setError('');
-    limpiarResultados();
-  }
-
-  async function cargarInfoBusParaOpciones(opcionesRuta) {
-    const resultadosInfoBus = {};
-
-    await Promise.all(
-      opcionesRuta.map(async (opcion, indice) => {
-        const paradaId = opcion.paradaOrigen?.id;
-
-        if (!paradaId) {
-          return;
-        }
-
-        try {
-          const respuestaInfoBus = await obtenerInfoBusParada(paradaId);
-          const tiempoLinea = buscarTiempoInfoBusParaLinea(respuestaInfoBus, opcion.linea);
-
-          if (tiempoLinea) {
-            const clave = generarClaveOpcion(opcion, indice);
-            resultadosInfoBus[clave] = tiempoLinea;
-          }
-        } catch (errorInfoBus) {
-          console.warn('No se pudo cargar InfoBus para la opción:', opcion, errorInfoBus);
-        }
-      })
-    );
-
-    setTiemposInfoBus(resultadosInfoBus);
-  }
-
-  function pedirUbicacionActual() {
-    setError('');
-    setErrorUbicacion('');
-
+  function usarUbicacionActual() {
     if (!navigator.geolocation) {
-      setErrorUbicacion('Tu navegador no permite usar ubicación.');
+      setError('Tu navegador no permite usar la ubicación actual.');
       return;
     }
 
-    setCargandoUbicacion(true);
+    setCargando(true);
+    setError('');
 
     navigator.geolocation.getCurrentPosition(
       (posicion) => {
-        const lat = posicion.coords.latitude;
-        const lon = posicion.coords.longitude;
-
-        const lugarUbicacionActual = {
-          id: 'ubicacion-actual',
+        const lugarActual = {
           nombre: 'Mi ubicación actual',
-          descripcion: 'Ubicación exacta del dispositivo',
-          lat,
-          lon,
-          tipo: 'ubicacion'
+          direccion: 'Posición detectada por GPS',
+          lat: posicion.coords.latitude,
+          lon: posicion.coords.longitude,
+          fuente: 'GPS'
         };
 
-        setOrigenSeleccionado(lugarUbicacionActual);
-        setTextoOrigen(lugarUbicacionActual.nombre);
-
-        setCargandoUbicacion(false);
-        limpiarResultados();
+        setOrigenSeleccionado(lugarActual);
+        limpiarRutas();
+        setCargando(false);
       },
-      (errorUbicacionNavegador) => {
-        setErrorUbicacion(obtenerMensajeErrorUbicacion(errorUbicacionNavegador));
-        setOrigenSeleccionado(null);
-        setTextoOrigen('');
-        setCargandoUbicacion(false);
-        limpiarResultados();
+      () => {
+        setError('No se pudo obtener tu ubicación. Revisa los permisos del navegador.');
+        setCargando(false);
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 60000
+        timeout: 10000
       }
     );
   }
 
-  function elegirOrigenEnMapa() {
-    setError('Más adelante activamos elegir origen manualmente en el mapa.');
+  function elegirEnMapaTemporal() {
+    setError('Elegir en mapa lo haremos en el siguiente bloque. Primero dejamos bien la pantalla de rutas.');
   }
 
-  function elegirDestinoEnMapa() {
-    setError('Más adelante activamos elegir destino manualmente en el mapa.');
-  }
-
-  async function buscarRuta() {
-    setError('');
-    setErrorUbicacion('');
-    setResultado(null);
-    setRutaSeleccionada(null);
-    setTiemposInfoBus({});
+  async function buscarOpcionesRuta() {
+    if (!puedeBuscar) {
+      setError('Elige un origen y un destino antes de buscar.');
+      return;
+    }
 
     try {
-      setResolviendoLugares(true);
+      setCargando(true);
+      setError('');
 
-      const origenFinal = await resolverLugarDesdeTexto({
-        lugarSeleccionado: origenSeleccionado,
-        texto: textoOrigen,
-        tipoLugar: 'origen'
-      });
-
-      const destinoFinal = await resolverLugarDesdeTexto({
-        lugarSeleccionado: destinoSeleccionado,
-        texto: textoDestino,
-        tipoLugar: 'destino'
-      });
-
-      setOrigenSeleccionado(origenFinal);
-      setDestinoSeleccionado(destinoFinal);
-
-      setTextoOrigen(origenFinal.nombre);
-      setTextoDestino(destinoFinal.nombre);
-
-      setResolviendoLugares(false);
-      setBuscando(true);
-
-      const respuesta = await buscarRutasDirectas({
-        origenLat: origenFinal.lat,
-        origenLon: origenFinal.lon,
-        destinoLat: destinoFinal.lat,
-        destinoLon: destinoFinal.lon,
-        fecha: obtenerFechaHoy(),
+      const respuesta = await buscarRutas({
+        origenLat: origenSeleccionado.lat,
+        origenLon: origenSeleccionado.lon,
+        destinoLat: destinoSeleccionado.lat,
+        destinoLon: destinoSeleccionado.lon,
+        fecha: obtenerFechaActual(),
         hora: obtenerHoraActual(),
-        maxResultados: 5
+        maxResultados: 6
       });
 
-      const opcionesRespuesta = respuesta.opciones || [];
+      const opciones = obtenerOpcionesRespuesta(respuesta);
 
-      setResultado(respuesta);
-      setRutaSeleccionada(opcionesRespuesta[0] || null);
+      setRutas(opciones);
+      setRutaSeleccionada(opciones[0] || null);
 
-      cargarInfoBusParaOpciones(opcionesRespuesta);
-    } catch (errorBusqueda) {
-      setError(
-        errorBusqueda.message ||
-        'No se pudo calcular la ruta.'
-      );
+      if (opciones.length === 0) {
+        setError('No encontré una ruta directa para ese trayecto. Después añadiremos transbordos bien desde backend.');
+      }
+    } catch (errorPeticion) {
+      setError(errorPeticion.message || 'No se pudieron buscar rutas.');
+      setRutas([]);
+      setRutaSeleccionada(null);
     } finally {
-      setResolviendoLugares(false);
-      setBuscando(false);
+      setCargando(false);
     }
   }
 
-  const indiceRutaPanel = rutaPanel
-    ? opciones.findIndex((opcion) => opcion.tripId === rutaPanel.tripId)
-    : -1;
-
-  const claveRutaPanel = rutaPanel
-    ? generarClaveOpcion(rutaPanel, indiceRutaPanel >= 0 ? indiceRutaPanel : 0)
-    : null;
-
-  const tiempoInfoBusRutaPanel = claveRutaPanel
-    ? tiemposInfoBus[claveRutaPanel]
-    : null;
-
   return (
-    <section className="inicio-layout">
-      <div className="inicio-layout__buscador">
-        <section className="pagina-inicio">
-          <div className="inicio-cabecera">
-            <p className="pagina-inicio__mini">Planificador de ruta</p>
-
-            <h1>¿A dónde quieres ir?</h1>
-
-            <p>
-              Busca rutas en bus por Vigo teniendo en cuenta paradas cercanas,
-              tiempo andando, esperas y transbordos.
-            </p>
-          </div>
-
-          <form className="buscador-ruta">
-            <SelectorLugar
-              etiqueta="Origen"
-              placeholder="Escribe un origen o usa tu ubicación"
-              tipo="origen"
-              valor={origenSeleccionado}
-              onSeleccionar={cambiarOrigen}
-              onTextoCambiado={cambiarTextoOrigen}
-              onUsarUbicacionActual={pedirUbicacionActual}
-              onElegirEnMapa={elegirOrigenEnMapa}
-            />
-
-            {cargandoUbicacion && (
-              <p className="mensaje-info">
-                Obteniendo tu ubicación actual...
-              </p>
-            )}
-
-            {errorUbicacion && (
-              <p className="mensaje-error">
-                {errorUbicacion}
-              </p>
-            )}
-
-            <SelectorLugar
-              etiqueta="Destino"
-              placeholder="Ej: Playa Samil, Plaza América..."
-              tipo="destino"
-              valor={destinoSeleccionado}
-              onSeleccionar={cambiarDestino}
-              onTextoCambiado={cambiarTextoDestino}
-              onElegirEnMapa={elegirDestinoEnMapa}
-            />
-
-            {resolviendoLugares && (
-              <p className="mensaje-info">
-                Buscando coordenadas del origen y destino...
-              </p>
-            )}
-
-            {error && (
-              <p className="mensaje-error">
-                {error}
-              </p>
-            )}
-
-            <button
-              className="boton-buscar"
-              type="button"
-              onClick={buscarRuta}
-              disabled={buscando || cargandoUbicacion || resolviendoLugares}
-            >
-              <Search size={20} />
-              {buscando ? 'Buscando ruta...' : 'Buscar ruta'}
-            </button>
-          </form>
-
-          {resultado && (
-            <section className="resultados-rutas">
-              <div className="resultados-rutas__cabecera">
-                <div>
-                  <p className="pagina-inicio__mini">Resultados</p>
-                  <h2>{resultado.totalOpciones} opciones encontradas</h2>
-                </div>
-
-                <span>
-                  {resultado.horaConsulta}
-                </span>
-              </div>
-
-              {opciones.length === 0 && (
-                <p className="mensaje-error">
-                  {resultado.mensaje || 'No se encontraron rutas disponibles.'}
-                </p>
-              )}
-
-              {opciones.map((opcion, indice) => {
-                const seleccionada = rutaSeleccionada?.tripId === opcion.tripId;
-                const claveOpcion = generarClaveOpcion(opcion, indice);
-                const tiempoInfoBus = tiemposInfoBus[claveOpcion];
-
-                return (
-                  <button
-                    type="button"
-                    className={
-                      seleccionada
-                        ? 'resultado-busqueda-demo resultado-busqueda-demo--boton resultado-busqueda-demo--seleccionada'
-                        : 'resultado-busqueda-demo resultado-busqueda-demo--boton'
-                    }
-                    key={claveOpcion}
-                    onClick={() => setRutaSeleccionada(opcion)}
-                  >
-                    <div className="resultado-busqueda-demo__superior">
-                      <div>
-                        <p className="pagina-inicio__mini">
-                          {opcion.recomendada ? 'Mejor opción' : 'Alternativa'}
-                        </p>
-
-                        <h2>
-                          {opcion.linea} directo
-                        </h2>
-                      </div>
-
-                      <span className="resultado-busqueda-demo__tiempo">
-                        {opcion.minutosTotal} min
-                      </span>
-                    </div>
-
-                    <div className="resultado-busqueda-demo__detalle">
-                      <div>
-                        <span>Salida bus</span>
-                        <strong>{opcion.horaSalidaBus}</strong>
-                      </div>
-
-                      <ArrowRight size={18} />
-
-                      <div>
-                        <span>Llegada final</span>
-                        <strong>{opcion.horaLlegadaFinal}</strong>
-                      </div>
-                    </div>
-
-                    <div className="resultado-busqueda-demo__linea">
-                      <span className="linea-bus-demo">
-                        {opcion.linea}
-                      </span>
-
-                      <IndicadorInfoBus tiempo={tiempoInfoBus} />
-
-                      <p>
-                        {opcion.destinoBus} · {opcion.transbordos} transbordos ·
-                        sales desde {opcion.paradaOrigen?.nombre}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </section>
-          )}
-        </section>
+    <section className="pagina-rutas-app">
+      <div className="rutas-fondo-mapa">
+        <div className="rutas-fondo-mapa__grid" />
+        <div className="rutas-fondo-mapa__linea rutas-fondo-mapa__linea--uno" />
+        <div className="rutas-fondo-mapa__linea rutas-fondo-mapa__linea--dos" />
+        <div className="rutas-fondo-mapa__punto rutas-fondo-mapa__punto--uno" />
+        <div className="rutas-fondo-mapa__punto rutas-fondo-mapa__punto--dos" />
       </div>
 
-      <aside className="panel-ruta-demo">
-        {!rutaPanel && (
-          <section className="panel-ruta-vacio">
-            <div className="panel-ruta-demo__icono">
-              <Route size={22} />
+      <div className="rutas-app-shell">
+        <section className="buscador-ruta-app">
+          <div className="buscador-ruta-app__cabecera">
+            <div>
+              <p className="pagina-inicio__mini">
+                ParadaBus · Vigo
+              </p>
+
+              <h1>
+                ¿A dónde quieres ir?
+              </h1>
             </div>
 
-            <p className="pagina-inicio__mini">Ruta seleccionada</p>
+            <div className="buscador-ruta-app__estado">
+              <span />
+              InfoBus
+            </div>
+          </div>
 
-            <h2>Busca una ruta</h2>
-
-            <p>
-              Escribe origen y destino. Puedes seleccionar una sugerencia,
-              usar tu ubicación actual o escribir el lugar y buscar directamente.
-            </p>
-          </section>
-        )}
-
-        {rutaPanel && (
-          <>
-            <div className="panel-ruta-demo__cabecera">
-              <div>
-                <p className="pagina-inicio__mini">Ruta seleccionada</p>
-                <h2>{rutaPanel.linea} directo</h2>
-              </div>
-
-              <div className="panel-ruta-demo__icono">
-                <Route size={22} />
-              </div>
+          <div className="buscador-ruta-app__campos">
+            <div className="buscador-ruta-app__timeline">
+              <span className="buscador-ruta-app__origen" />
+              <span className="buscador-ruta-app__linea" />
+              <span className="buscador-ruta-app__destino" />
             </div>
 
-            <div className="tarjeta-ruta-demo">
-              <div className="tarjeta-ruta-demo__linea">
-                <span className="linea-bus-demo">
-                  {rutaPanel.linea}
-                </span>
+            <div className="buscador-ruta-app__inputs">
+              <SelectorLugar
+                etiqueta="Origen"
+                placeholder="Origen o ubicación actual"
+                valor={origenSeleccionado}
+                tipo="origen"
+                onSeleccionar={manejarSeleccionOrigen}
+                onUsarUbicacionActual={usarUbicacionActual}
+                onElegirEnMapa={elegirEnMapaTemporal}
+                onTextoCambiado={limpiarRutas}
+              />
 
-                <div>
-                  <strong className="tarjeta-ruta-demo__titulo-linea">
-                    {rutaPanel.linea} · {rutaPanel.destinoBus}
-                    <IndicadorInfoBus tiempo={tiempoInfoBusRutaPanel} />
-                  </strong>
+              <SelectorLugar
+                etiqueta="Destino"
+                placeholder="¿A dónde vas?"
+                valor={destinoSeleccionado}
+                tipo="destino"
+                onSeleccionar={manejarSeleccionDestino}
+                onElegirEnMapa={elegirEnMapaTemporal}
+                onTextoCambiado={limpiarRutas}
+              />
+            </div>
+          </div>
 
-                  <p>
-                    {rutaPanel.minutosTotal} min · {rutaPanel.transbordos} transbordos
-                  </p>
-                </div>
-              </div>
+          <div className="buscador-ruta-app__acciones">
+            <button
+              type="button"
+              className="boton-ubicacion-ruta"
+              onClick={usarUbicacionActual}
+              disabled={cargando}
+            >
+              <LocateFixed size={17} />
+              Mi ubicación
+            </button>
 
-              <div className="ruta-tiempo-demo">
-                <div>
-                  <Clock size={18} />
-                  <span>{rutaPanel.minutosTotal} min</span>
-                </div>
+            <button
+              type="button"
+              className="boton-buscar-ruta"
+              onClick={buscarOpcionesRuta}
+              disabled={cargando || !puedeBuscar}
+            >
+              {cargando ? (
+                <Loader2 className="icono-girando" size={18} />
+              ) : (
+                <Search size={18} />
+              )}
 
-                <ArrowRight size={18} />
+              Buscar ruta
+            </button>
+          </div>
 
-                <div>
-                  <BusFront size={18} />
-                  <span>{rutaPanel.transbordos} transbordos</span>
-                </div>
-              </div>
+          <div className="buscador-ruta-app__resumen">
+            <Route size={16} />
+            <span>{resumenBusqueda}</span>
+          </div>
+
+          {error && (
+            <div className="buscador-ruta-app__error">
+              {error}
+            </div>
+          )}
+        </section>
+
+        <section className="resultados-rutas-app">
+          <div className="resultados-rutas-app__cabecera">
+            <div>
+              <p className="pagina-inicio__mini">
+                Opciones
+              </p>
+
+              <h2>
+                Rutas disponibles
+              </h2>
             </div>
 
-            <section className="detalle-ruta-seleccionada">
-              <h3>Detalle del viaje</h3>
+            <button
+              type="button"
+              className="resultados-rutas-app__actualizar"
+              onClick={buscarOpcionesRuta}
+              disabled={cargando || !puedeBuscar}
+            >
+              <RefreshCw size={16} />
+            </button>
+          </div>
 
-              <div className="paso-ruta">
-                <div className="paso-ruta__icono">
-                  <Footprints size={18} />
-                </div>
+          {cargando && (
+            <div className="skeleton-rutas">
+              <div />
+              <div />
+              <div />
+            </div>
+          )}
 
-                <div>
-                  <span>Camina hasta la parada</span>
-                  <strong>{rutaPanel.paradaOrigen?.nombre}</strong>
-                  <p>{rutaPanel.minutosAndandoOrigen} min andando</p>
-                </div>
-              </div>
+          {!cargando && rutas.length === 0 && (
+            <EstadoVacioRutas />
+          )}
 
-              <div className="paso-ruta">
-                <div className="paso-ruta__icono paso-ruta__icono--bus">
-                  <BusFront size={18} />
-                </div>
+          {!cargando && rutas.length > 0 && (
+            <div className="resultados-rutas-app__lista">
+              {rutas.map((ruta, indice) => (
+                <TarjetaRuta
+                  key={`${ruta?.tripId || ruta?.routeId || 'ruta'}-${indice}`}
+                  ruta={ruta}
+                  indice={indice}
+                  activa={ruta === rutaSeleccionada}
+                  onSeleccionar={() => setRutaSeleccionada(ruta)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
 
-                <div>
-                  <span>Coge el bus</span>
-                  <strong className="paso-ruta__linea-infobus">
-                    Línea {rutaPanel.linea} · sale {rutaPanel.horaSalidaBus}
-                    <IndicadorInfoBus tiempo={tiempoInfoBusRutaPanel} />
-                  </strong>
-                  <p>{rutaPanel.destinoBus}</p>
-                </div>
-              </div>
+        <PanelRutaSeleccionada
+          ruta={rutaSeleccionada}
+          origen={origenSeleccionado}
+          destino={destinoSeleccionado}
+          onCerrar={() => setRutaSeleccionada(null)}
+        />
 
-              <div className="paso-ruta">
-                <div className="paso-ruta__icono">
-                  <MapPin size={18} />
-                </div>
-
-                <div>
-                  <span>Baja en</span>
-                  <strong>{rutaPanel.paradaDestino?.nombre}</strong>
-                  <p>Llegada bus: {rutaPanel.horaLlegadaBus}</p>
-                </div>
-              </div>
-
-              <div className="paso-ruta">
-                <div className="paso-ruta__icono">
-                  <Footprints size={18} />
-                </div>
-
-                <div>
-                  <span>Camina hasta el destino</span>
-                  <strong>{destinoSeleccionado?.nombre || textoDestino || 'Destino seleccionado'}</strong>
-                  <p>
-                    {rutaPanel.minutosAndandoDestino} min andando · llegada final {rutaPanel.horaLlegadaFinal}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <MapaRuta
-              ruta={rutaPanel}
-              origen={origenSeleccionado}
-              destino={destinoSeleccionado}
-            />
-          </>
-        )}
-      </aside>
+        <div className="rutas-app-shell__ayuda">
+          <Sparkles size={16} />
+          Primero probamos directas. Después metemos transbordos sin que se vuelva lenta la app.
+        </div>
+      </div>
     </section>
   );
 }

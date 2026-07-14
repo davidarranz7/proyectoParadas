@@ -1,238 +1,167 @@
 /* =========================================================
    RESPONSIVE RUTAS
-   Adaptación para tablet y móvil
    ========================================================= */
 
-@media (max-width: 1320px) {
-  .inicio-layout {
-    grid-template-columns: minmax(320px, 470px) minmax(380px, 1fr);
-    gap: 18px;
+@media (max-width: 1180px) {
+  .rutas-app-shell {
+    grid-template-columns: minmax(320px, 410px) minmax(330px, 1fr);
+    gap: 14px;
   }
 
-  .inicio-cabecera h1 {
-    font-size: clamp(2.05rem, 4vw, 2.85rem);
+  .panel-ruta-app__resumen {
+    grid-template-columns: 1fr 1fr;
   }
 
-  .panel-ruta-demo {
-    padding: 18px;
-  }
-
-  .mapa-ruta {
-    min-height: 320px;
-  }
-
-  .mapa-ruta__leaflet {
-    min-height: 320px;
-  }
-}
-
-@media (max-width: 1100px) {
-  .inicio-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .buscador-ruta,
-  .resultados-rutas,
-  .resultado-busqueda-demo {
-    max-width: none;
-  }
-
-  .panel-ruta-demo {
-    min-height: auto;
-  }
-}
-
-@media (max-width: 760px) {
-  .inicio-layout {
-    gap: 16px;
-  }
-
-  .inicio-cabecera {
-    margin-bottom: 18px;
-  }
-
-  .inicio-cabecera h1 {
-    font-size: 2.15rem;
-  }
-
-  .inicio-cabecera p {
-    margin-top: 10px;
-    font-size: 0.88rem;
-  }
-
-  .panel-ruta-demo__cabecera h2 {
-    font-size: 1.15rem;
-  }
-
-  .panel-ruta-demo__icono {
-    width: 38px;
-    height: 38px;
-  }
-
-  .resultado-busqueda-demo__superior h2 {
-    font-size: 1.12rem;
-  }
-
-  .resultado-busqueda-demo__detalle {
-    padding: 11px;
-  }
-
-  .linea-bus-demo {
-    min-width: 38px;
-    height: 38px;
-    border-radius: 13px;
-  }
-
-  .mapa-ruta {
-    min-height: 360px;
-  }
-
-  .mapa-ruta__leaflet {
-    min-height: 360px;
-  }
-}
-
-@media (max-width: 560px) {
-  .inicio-cabecera {
-    margin-bottom: 18px;
-  }
-
-  .inicio-cabecera h1 {
-    font-size: 1.9rem;
-    letter-spacing: -0.06em;
-  }
-
-  .buscador-ruta {
-    max-width: none;
-  }
-
-  .selector-lugar__caja {
-    min-height: 50px;
-    border-radius: 15px;
-  }
-
-  .boton-buscar {
-    min-height: 50px;
-    border-radius: 15px;
-  }
-
-  .campo-ruta {
-    grid-template-columns: 40px 1fr;
-    padding: 13px;
-    border-radius: 16px;
-  }
-
-  .campo-ruta__icono {
-    width: 40px;
-    height: 40px;
-  }
-
-  .boton-ubicacion {
+  .panel-ruta-app__resumen .tiempo-real {
+    grid-column: 1 / -1;
     width: 100%;
-    justify-content: center;
+    min-height: 52px;
+  }
+}
+
+@media (max-width: 980px) {
+  .pagina-rutas-app {
+    min-height: calc(100vh - 92px);
+    border-radius: 28px;
   }
 
-  .resultado-busqueda-demo {
-    padding: 13px;
-    border-radius: 17px;
-  }
-
-  .resultado-busqueda-demo__detalle {
+  .rutas-app-shell {
+    min-height: calc(100vh - 92px);
+    padding: 10px;
+    display: grid;
     grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
   }
 
-  .resultado-busqueda-demo__detalle svg {
-    transform: rotate(90deg);
-    justify-self: center;
+  .buscador-ruta-app {
+    grid-column: 1;
+    grid-row: 1;
   }
 
-  .resultado-busqueda-demo__linea {
+  .resultados-rutas-app {
+    grid-column: 1;
+    grid-row: 2;
+    max-height: none;
+  }
+
+  .panel-ruta-app {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .rutas-app-shell__ayuda {
+    grid-column: 1;
+    grid-row: 4;
+    justify-self: stretch;
+    border-radius: 20px;
+    line-height: 1.35;
+  }
+
+  .resultados-rutas-app__lista {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .panel-ruta-app__mapa {
+    min-height: 320px;
+  }
+
+  .panel-ruta-app__mapa .leaflet-container {
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 640px) {
+  .pagina-rutas-app {
+    margin: 0;
+    border-radius: 26px;
+  }
+
+  .rutas-app-shell {
+    padding: 8px;
+    gap: 10px;
+  }
+
+  .buscador-ruta-app,
+  .resultados-rutas-app,
+  .panel-ruta-app {
+    border-radius: 25px;
+  }
+
+  .buscador-ruta-app {
+    padding: 15px;
+  }
+
+  .buscador-ruta-app__cabecera {
     align-items: flex-start;
   }
 
-  .panel-ruta-demo {
-    padding: 14px;
-    border-radius: 20px;
+  .buscador-ruta-app__cabecera h1 {
+    font-size: 2rem;
   }
 
-  .tarjeta-ruta-demo,
-  .detalle-ruta-seleccionada {
-    border-radius: 17px;
-  }
-
-  .ruta-tiempo-demo {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .ruta-tiempo-demo > svg {
+  .buscador-ruta-app__estado {
     display: none;
   }
 
-  .paso-ruta {
-    grid-template-columns: 32px 1fr;
-    gap: 10px;
+  .buscador-ruta-app__acciones {
+    grid-template-columns: 1fr;
   }
 
-  .paso-ruta__icono {
-    width: 32px;
-    height: 32px;
+  .boton-ubicacion-ruta,
+  .boton-buscar-ruta {
+    width: 100%;
   }
 
-  .paso-ruta:not(:last-child)::after {
-    left: 15px;
-    top: 32px;
+  .tarjeta-ruta {
+    padding: 14px;
+    border-radius: 21px;
   }
 
-  .mapa-ruta {
-    min-height: 330px;
-    border-radius: 18px;
+  .tarjeta-ruta__tiempo strong {
+    font-size: 1.6rem;
   }
 
-  .mapa-ruta__leaflet {
-    min-height: 330px;
+  .tarjeta-ruta__superior {
+    gap: 8px;
   }
 
-  .mapa-ruta__estado {
-    max-width: calc(100% - 20px);
-    padding: 7px 11px;
-    font-size: 0.7rem;
-    white-space: normal;
-    text-align: center;
+  .panel-ruta-app__resumen {
+    grid-template-columns: 1fr 1fr;
   }
 
-  .indicador-infobus {
-    width: 28px;
-    height: 28px;
-    font-size: 0.76rem;
+  .panel-ruta-app__mapa {
+    min-height: 300px;
+  }
+
+  .panel-ruta-app__mapa .leaflet-container {
+    min-height: 300px;
   }
 }
 
-@media (max-width: 420px) {
-  .inicio-cabecera h1 {
-    font-size: 1.72rem;
+@media (max-width: 430px) {
+  .buscador-ruta-app__campos {
+    grid-template-columns: 18px minmax(0, 1fr);
+    gap: 9px;
   }
 
-  .pagina-inicio__mini {
-    font-size: 0.66rem;
+  .buscador-ruta-app__timeline {
+    padding-top: 30px;
   }
 
-  .resultado-busqueda-demo__superior {
-    gap: 10px;
+  .tarjeta-ruta__linea {
+    gap: 6px;
   }
 
-  .resultado-busqueda-demo__tiempo {
-    min-width: 50px;
-    height: 30px;
-    font-size: 0.78rem;
+  .tarjeta-ruta__horas {
+    flex-wrap: wrap;
   }
 
-  .mapa-ruta {
-    min-height: 310px;
+  .panel-ruta-app {
+    padding: 14px;
   }
 
-  .mapa-ruta__leaflet {
-    min-height: 310px;
+  .panel-ruta-app__cabecera h2 {
+    font-size: 1.25rem;
   }
 }

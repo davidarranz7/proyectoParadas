@@ -30,7 +30,7 @@ const opcionesBarra = [
 
 function BarraInferior({ paginaActiva, onCambiarPagina }) {
   return (
-    <nav className="barra-inferior">
+    <nav className="barra-inferior" aria-label="Navegación inferior">
       {opcionesBarra.map((opcion) => {
         const Icono = opcion.icono;
         const activo = paginaActiva === opcion.id;
@@ -46,8 +46,13 @@ function BarraInferior({ paginaActiva, onCambiarPagina }) {
             }
             onClick={() => onCambiarPagina(opcion.id)}
           >
-            <Icono size={20} />
-            <span>{opcion.texto}</span>
+            <span className="barra-inferior__icono">
+              <Icono size={21} />
+            </span>
+
+            <span className="barra-inferior__texto">
+              {opcion.texto}
+            </span>
           </button>
         );
       })}

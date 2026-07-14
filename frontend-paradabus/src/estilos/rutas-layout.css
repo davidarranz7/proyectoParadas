@@ -1,71 +1,150 @@
 /* =========================================================
-   RUTAS - LAYOUT GENERAL
-   Pantalla principal de búsqueda de rutas
+   PANTALLA RUTAS - ESTRUCTURA GENERAL
    ========================================================= */
 
-.inicio-layout {
-  width: 100%;
-  min-height: calc(100vh - 60px);
+.pagina-rutas-app {
+  position: relative;
+  min-height: calc(100vh - 48px);
+  overflow: hidden;
+  border-radius: 30px;
+  background: #eef3f8;
+  isolation: isolate;
+}
+
+.rutas-fondo-mapa {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(232, 242, 255, 0.5)),
+    #eef3f8;
+}
+
+.rutas-fondo-mapa::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 24% 18%, rgba(9, 105, 218, 0.14), transparent 18%),
+    radial-gradient(circle at 80% 28%, rgba(22, 163, 74, 0.12), transparent 20%),
+    linear-gradient(180deg, transparent 0%, rgba(251, 249, 246, 0.55) 72%, rgba(251, 249, 246, 0.92) 100%);
+}
+
+.rutas-fondo-mapa__grid {
+  position: absolute;
+  inset: -60px;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
+  background-size: 54px 54px;
+  transform: rotate(-8deg) scale(1.1);
+}
+
+.rutas-fondo-mapa__linea {
+  position: absolute;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-principal), var(--color-verde));
+  opacity: 0.25;
+  filter: blur(0.2px);
+}
+
+.rutas-fondo-mapa__linea--uno {
+  width: 520px;
+  left: 8%;
+  top: 33%;
+  transform: rotate(-15deg);
+}
+
+.rutas-fondo-mapa__linea--dos {
+  width: 620px;
+  right: -8%;
+  top: 58%;
+  transform: rotate(18deg);
+}
+
+.rutas-fondo-mapa__punto {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: #ffffff;
+  border: 5px solid var(--color-principal);
+  border-radius: 999px;
+  box-shadow: 0 16px 34px rgba(9, 105, 218, 0.22);
+}
+
+.rutas-fondo-mapa__punto--uno {
+  left: 31%;
+  top: 29%;
+}
+
+.rutas-fondo-mapa__punto--dos {
+  right: 24%;
+  top: 61%;
+}
+
+.rutas-app-shell {
+  position: relative;
+  min-height: calc(100vh - 48px);
+  padding: 18px;
   display: grid;
-  grid-template-columns: minmax(330px, 520px) minmax(420px, 1fr);
-  gap: 20px;
+  grid-template-columns: minmax(340px, 440px) minmax(360px, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 16px;
 }
 
-.inicio-layout__buscador {
-  min-width: 0;
+.buscador-ruta-app {
+  grid-column: 1;
+  grid-row: 1;
 }
 
-.pagina-inicio {
-  width: 100%;
+.resultados-rutas-app {
+  grid-column: 1;
+  grid-row: 2;
+  min-height: 0;
 }
 
-.inicio-cabecera {
-  max-width: 620px;
-  margin-bottom: 22px;
+.panel-ruta-app {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  min-height: 0;
 }
 
-.inicio-cabecera h1 {
-  margin: 0;
-  font-size: clamp(2.25rem, 4vw, 3.25rem);
-  line-height: 0.98;
-  letter-spacing: -0.07em;
-}
-
-.inicio-cabecera p {
-  max-width: 520px;
-  margin: 14px 0 0;
+.rutas-app-shell__ayuda {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  min-height: 42px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
   color: var(--color-texto-suave);
-  font-size: 0.95rem;
-  line-height: 1.5;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 760;
+  backdrop-filter: blur(16px);
 }
 
 .pagina-inicio__mini {
-  margin: 0 0 8px;
-  color: var(--color-texto-suave);
+  margin: 0 0 5px;
+  color: var(--color-principal);
   font-size: 0.72rem;
   font-weight: 900;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.mensaje-error {
-  margin: 0;
-  padding: 11px 13px;
-  color: #b91c1c;
-  background: #fff1f2;
-  border: 1px solid #fecdd3;
-  border-radius: 14px;
-  font-size: 0.88rem;
-  font-weight: 700;
+.icono-girando {
+  animation: girar 0.85s linear infinite;
 }
 
-.mensaje-info {
-  margin: 0;
-  padding: 11px 13px;
-  color: var(--color-principal);
-  background: var(--color-principal-suave);
-  border: 1px solid rgba(9, 105, 218, 0.18);
-  border-radius: 14px;
-  font-size: 0.88rem;
-  font-weight: 750;
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
 }

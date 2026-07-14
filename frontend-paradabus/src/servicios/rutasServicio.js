@@ -42,3 +42,14 @@ export async function buscarRutasConTransbordo(datosRuta) {
 
   return apiGet(`/rutas/transbordos?${parametros}`);
 }
+
+/*
+  Función general que usa la pantalla principal.
+
+  Ahora mismo devolvemos solo rutas directas para mantener la app rápida
+  y estable. Más adelante aquí cambiaremos a un endpoint único:
+  /api/rutas/buscar
+*/
+export async function buscarRutas(datosRuta) {
+  return buscarRutasDirectas(datosRuta);
+}

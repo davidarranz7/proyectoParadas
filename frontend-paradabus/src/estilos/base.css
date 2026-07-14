@@ -1,34 +1,67 @@
 /* =========================================================
-   BASE GLOBAL
-   Variables, reset básico, fuente y estilos comunes
+   BASE GLOBAL - PARADABUS
+   Colores, fuentes, reset y estilo base de toda la app
    ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
 
 * {
   box-sizing: border-box;
 }
 
 :root {
-  --color-fondo: #f4f6f8;
+  /* Fondo general */
+  --color-fondo: #fbf9f6;
+  --color-fondo-mapa: #eef1f4;
   --color-panel: #ffffff;
 
-  --color-texto: #111827;
-  --color-texto-suave: #6b7280;
+  /* Texto */
+  --color-texto: #1b1c1a;
+  --color-texto-suave: #6b625d;
+  --color-texto-muy-suave: #9a8f88;
 
-  --color-borde: #e5e7eb;
+  /* Bordes */
+  --color-borde: rgba(139, 114, 99, 0.22);
+  --color-borde-fuerte: rgba(139, 114, 99, 0.38);
 
+  /* Marca */
   --color-principal: #0969da;
   --color-principal-oscuro: #0757b8;
   --color-principal-suave: #e8f2ff;
+  --color-principal-medio: #d7eaff;
 
+  /* Estados */
   --color-verde: #16a34a;
+  --color-verde-suave: #dcfce7;
   --color-naranja: #f97316;
+  --color-naranja-suave: #ffedd5;
   --color-rojo: #dc2626;
+  --color-rojo-suave: #fee2e2;
 
+  /* Superficies tipo app */
+  --superficie-glass: rgba(255, 255, 255, 0.78);
+  --superficie-glass-fuerte: rgba(255, 255, 255, 0.92);
+  --superficie-suave: rgba(248, 250, 252, 0.86);
+
+  /* Sombras */
   --sombra-panel: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --sombra-flotante: 0 20px 60px rgba(15, 23, 42, 0.16);
+  --sombra-boton: 0 12px 28px rgba(9, 105, 218, 0.22);
 
+  /* Radios */
+  --radio-gigante: 32px;
   --radio-grande: 26px;
   --radio-medio: 18px;
   --radio-pequeno: 14px;
+  --radio-pill: 999px;
+
+  /* Layout */
+  --alto-barra-movil: 78px;
+  --ancho-sidebar: 236px;
+  --padding-app: 20px;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
 }
 
 html,
@@ -37,8 +70,17 @@ body,
   min-height: 100%;
 }
 
+html {
+  background: var(--color-fondo);
+}
+
 body {
   margin: 0;
+  min-width: 320px;
+  color: var(--color-texto);
+  background:
+    radial-gradient(circle at top left, rgba(9, 105, 218, 0.08), transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, var(--color-fondo) 40%, #f4f6f8 100%);
   font-family:
     Inter,
     system-ui,
@@ -46,12 +88,14 @@ body {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  color: var(--color-texto);
-  background: var(--color-fondo);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button,
-input {
+input,
+textarea,
+select {
   font: inherit;
 }
 
@@ -61,6 +105,15 @@ button {
 
 button:disabled {
   cursor: not-allowed;
+}
+
+button,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  border: 0;
 }
 
 a {
@@ -73,7 +126,99 @@ svg {
   display: block;
 }
 
-input,
-button {
-  -webkit-tap-highlight-color: transparent;
+h1,
+h2,
+h3,
+h4 {
+  font-family:
+    "Plus Jakarta Sans",
+    Inter,
+    system-ui,
+    sans-serif;
+}
+
+p {
+  margin-top: 0;
+}
+
+::selection {
+  color: #ffffff;
+  background: var(--color-principal);
+}
+
+/* Utilidades comunes */
+
+.texto-mono {
+  font-family:
+    "JetBrains Mono",
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+
+.superficie-glass {
+  background: var(--superficie-glass);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: var(--sombra-flotante);
+  backdrop-filter: blur(18px);
+}
+
+.boton-primario-app {
+  min-height: 46px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--color-principal), var(--color-principal-oscuro));
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 850;
+  box-shadow: var(--sombra-boton);
+}
+
+.boton-primario-app:active {
+  transform: scale(0.98);
+}
+
+.boton-secundario-app {
+  min-height: 42px;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--color-principal);
+  background: var(--color-principal-suave);
+  border: 1px solid rgba(9, 105, 218, 0.16);
+  border-radius: 15px;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.pagina-placeholder {
+  min-height: calc(100vh - 48px);
+  padding: 26px;
+  background: var(--superficie-glass-fuerte);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra-panel);
+  backdrop-filter: blur(18px);
+}
+
+.pagina-placeholder h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.pagina-placeholder p {
+  max-width: 620px;
+  margin-top: 12px;
+  color: var(--color-texto-suave);
+  font-size: 0.96rem;
+  line-height: 1.5;
 }
