@@ -21,7 +21,7 @@
     min-height: calc(100vh - 48px);
     padding: 18px;
     grid-template-columns: minmax(360px, 430px) minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
     align-items: start;
   }
 
@@ -30,9 +30,14 @@
     grid-row: 1;
   }
 
-  .resultados-rutas-app {
+  .trayecto-activo {
     grid-column: 1;
     grid-row: 2;
+  }
+
+  .resultados-rutas-app {
+    grid-column: 1;
+    grid-row: 3;
     min-height: 0;
   }
 
@@ -44,7 +49,7 @@
 
   .panel-ruta-app {
     grid-column: 2;
-    grid-row: 1 / span 2;
+    grid-row: 1 / span 3;
     position: sticky;
     top: 24px;
     max-height: calc(100vh - 48px);
@@ -52,6 +57,7 @@
 
   .rutas-app-shell__ayuda {
     grid-column: 1 / -1;
+    grid-row: 4;
   }
 
   .panel-ruta-app__mapa {

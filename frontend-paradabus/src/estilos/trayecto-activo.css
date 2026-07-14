@@ -1,0 +1,149 @@
+.trayecto-activo {
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+  background:
+    linear-gradient(135deg, rgba(22, 56, 77, 0.92), rgba(31, 74, 99, 0.88));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 24px 54px rgba(22, 56, 77, 0.22);
+  color: #ffffff;
+}
+
+.trayecto-activo__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.trayecto-activo__cabecera .pagina-inicio__mini {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.trayecto-activo__cabecera h2 {
+  margin-top: 8px;
+  color: #ffffff;
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.trayecto-activo__texto {
+  margin-top: 10px;
+  max-width: 52ch;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.trayecto-activo__estado {
+  min-height: 34px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radio-pill);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.trayecto-activo__punto {
+  width: 8px;
+  height: 8px;
+  background: var(--color-verde);
+  border-radius: 999px;
+  box-shadow: 0 0 0 6px rgba(31, 184, 116, 0.16);
+}
+
+.trayecto-activo__punto--final {
+  background: var(--color-naranja);
+  box-shadow: 0 0 0 6px rgba(255, 157, 45, 0.16);
+}
+
+.trayecto-activo__metricas {
+  display: grid;
+  gap: 10px;
+}
+
+.trayecto-activo__metrica {
+  min-height: 76px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+}
+
+.trayecto-activo__metrica strong {
+  display: block;
+  font-family: Sora, Manrope, sans-serif;
+  font-size: 1rem;
+  color: #ffffff;
+}
+
+.trayecto-activo__metrica span {
+  display: block;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.trayecto-activo__alerta {
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+}
+
+.trayecto-activo__alerta svg {
+  margin-top: 2px;
+}
+
+.trayecto-activo__alerta strong {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.trayecto-activo__alerta span {
+  display: block;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.76rem;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.trayecto-activo__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.trayecto-activo .boton-buscar-ruta {
+  box-shadow: none;
+}
+
+.trayecto-activo .boton-ubicacion-ruta {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.trayecto-activo .boton-secundario-trayecto {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+@media (min-width: 640px) {
+  .trayecto-activo__metricas {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

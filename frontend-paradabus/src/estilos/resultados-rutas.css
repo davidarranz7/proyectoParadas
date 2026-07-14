@@ -68,6 +68,35 @@
   gap: 12px;
 }
 
+.resultados-rutas-app__aviso {
+  padding: 12px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--color-texto-suave);
+  background: rgba(22, 56, 77, 0.05);
+  border: 1px solid rgba(22, 56, 77, 0.08);
+  border-radius: 18px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.resultados-rutas-app__boton-transbordo {
+  min-height: 36px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-principal);
+  background: var(--color-principal-suave);
+  border: 1px solid rgba(255, 107, 61, 0.12);
+  border-radius: 14px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
 .tarjeta-ruta {
   position: relative;
   width: 100%;
@@ -196,6 +225,18 @@
   box-shadow: 0 12px 28px rgba(22, 56, 77, 0.18);
   font-size: 0.82rem;
   font-weight: 900;
+}
+
+.linea-bus-pill--suave {
+  color: var(--color-secundario);
+  background: rgba(22, 56, 77, 0.08);
+  box-shadow: none;
+}
+
+.tarjeta-ruta__lineas-secundarias {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .linea-bus-pill--grande {

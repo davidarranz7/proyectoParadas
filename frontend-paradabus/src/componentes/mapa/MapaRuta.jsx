@@ -148,10 +148,8 @@ function extraerPuntosRecorrido(respuesta) {
 
 function calcularDistanciaMetros(puntoA, puntoB) {
   const radioTierra = 6371000;
-
   const lat1 = puntoA[0] * Math.PI / 180;
   const lat2 = puntoB[0] * Math.PI / 180;
-
   const diferenciaLat = (puntoB[0] - puntoA[0]) * Math.PI / 180;
   const diferenciaLon = (puntoB[1] - puntoA[1]) * Math.PI / 180;
 
@@ -291,46 +289,81 @@ function obtenerListaParadasTrip(respuesta) {
   );
 }
 
-function MapaRuta({ ruta, origen, destino }) {
+function obtenerTramoMapa(ruta, segmentoSeguimiento) {
+  if (segmentoSeguimiento) {
+    return segmentoSeguimiento;
+  }
+
+  if (ruta?.tramoMapaInicial) {
+    return ruta.tramoMapaInicial;
+  }
+
+  if (Array.isArray(ruta?.tramos) && ruta.tramos.length > 0) {
+    return ruta.tramos[0];
+  }
+
+  return {
+    linea: ruta?.linea,
+    tripId: ruta?.tripId,
+    paradaSalida: ruta?.paradaOrigen,
+    paradaLlegada: ruta?.paradaDestino
+  };
+}
+
+function MapaRuta({
+  ruta,
+  origen,
+  destino,
+  trayectoActivo = null,
+  segmentoSeguimiento = null,
+  ubicacionUsuario = null
+}) {
   const [puntosBusCompletos, setPuntosBusCompletos] = useState([]);
   const [paradasTrip, setParadasTrip] = useState([]);
-
   const [cargandoRecorrido, setCargandoRecorrido] = useState(false);
   const [cargandoParadasTrip, setCargandoParadasTrip] = useState(false);
-
   const [errorRecorrido, setErrorRecorrido] = useState('');
   const [errorParadasTrip, setErrorParadasTrip] = useState('');
 
+  const tramoMapa = useMemo(() => {
+    return obtenerTramoMapa(ruta, segmentoSeguimiento);
+  }, [ruta, segmentoSeguimiento]);
+
   const puntoOrigenUsuario = useMemo(() => {
-    return obtenerPuntoLugar(origen);
-  }, [origen]);
+    return ubicacionUsuario
+      ? [ubicacionUsuario.lat, ubicacionUsuario.lon]
+      : obtenerPuntoLugar(origen);
+  }, [origen, ubicacionUsuario]);
 
   const puntoDestinoUsuario = useMemo(() => {
     return obtenerPuntoLugar(destino);
   }, [destino]);
 
   const paradaOrigen = useMemo(() => {
-    return obtenerPuntoLugar(ruta?.paradaOrigen);
-  }, [ruta?.paradaOrigen]);
+    return obtenerPuntoLugar(tramoMapa?.paradaSalida || ruta?.paradaOrigen);
+  }, [ruta?.paradaOrigen, tramoMapa]);
 
   const paradaDestino = useMemo(() => {
-    return obtenerPuntoLugar(ruta?.paradaDestino);
-  }, [ruta?.paradaDestino]);
+    return obtenerPuntoLugar(tramoMapa?.paradaLlegada || ruta?.paradaDestino);
+  }, [ruta?.paradaDestino, tramoMapa]);
 
   const stopOrigen = useMemo(() => {
-    return obtenerStopIdParada(ruta?.paradaOrigen);
-  }, [ruta?.paradaOrigen]);
+    return obtenerStopIdParada(tramoMapa?.paradaSalida || ruta?.paradaOrigen);
+  }, [ruta?.paradaOrigen, tramoMapa]);
 
   const stopDestino = useMemo(() => {
-    return obtenerStopIdParada(ruta?.paradaDestino);
-  }, [ruta?.paradaDestino]);
+    return obtenerStopIdParada(tramoMapa?.paradaLlegada || ruta?.paradaDestino);
+  }, [ruta?.paradaDestino, tramoMapa]);
+
+  const lineaMapa = tramoMapa?.linea || ruta?.linea;
+  const tripIdMapa = tramoMapa?.tripId || ruta?.tripId;
 
   useEffect(() => {
     async function cargarRecorridoBus() {
       setPuntosBusCompletos([]);
       setErrorRecorrido('');
 
-      if (!ruta?.linea || !ruta?.tripId) {
+      if (!lineaMapa || !tripIdMapa) {
         setErrorRecorrido('Selecciona una ruta para cargar el recorrido real.');
         return;
       }
@@ -339,8 +372,8 @@ function MapaRuta({ ruta, origen, destino }) {
         setCargandoRecorrido(true);
 
         const respuesta = await obtenerRecorridoMapaLinea({
-          codigoLinea: ruta.linea,
-          tripId: ruta.tripId
+          codigoLinea: lineaMapa,
+          tripId: tripIdMapa
         });
 
         const puntos = extraerPuntosRecorrido(respuesta);
@@ -360,14 +393,14 @@ function MapaRuta({ ruta, origen, destino }) {
     }
 
     cargarRecorridoBus();
-  }, [ruta?.linea, ruta?.tripId]);
+  }, [lineaMapa, tripIdMapa]);
 
   useEffect(() => {
     async function cargarParadasDelTrip() {
       setParadasTrip([]);
       setErrorParadasTrip('');
 
-      if (!ruta?.tripId) {
+      if (!tripIdMapa) {
         return;
       }
 
@@ -375,7 +408,7 @@ function MapaRuta({ ruta, origen, destino }) {
         setCargandoParadasTrip(true);
 
         const respuesta = await obtenerParadasTrip({
-          tripId: ruta.tripId,
+          tripId: tripIdMapa,
           stopOrigen,
           stopDestino
         });
@@ -396,7 +429,7 @@ function MapaRuta({ ruta, origen, destino }) {
     }
 
     cargarParadasDelTrip();
-  }, [ruta?.tripId, stopOrigen, stopDestino]);
+  }, [tripIdMapa, stopDestino, stopOrigen]);
 
   const puntosBusRecortados = useMemo(() => {
     if (puntosBusCompletos.length >= 2 && paradaOrigen && paradaDestino) {
@@ -441,7 +474,7 @@ function MapaRuta({ ruta, origen, destino }) {
 
       return !esSubida && !esBajada;
     });
-  }, [paradasTrip, stopOrigen, stopDestino]);
+  }, [paradasTrip, stopDestino, stopOrigen]);
 
   const numeroParadasHastaBajar = useMemo(() => {
     if (paradasTrip.length <= 1) {
@@ -452,6 +485,14 @@ function MapaRuta({ ruta, origen, destino }) {
   }, [paradasTrip]);
 
   const centroMapa = puntoOrigenUsuario || paradaOrigen || [42.232045931, -8.708603793];
+
+  const paradaSiguienteTrayecto = trayectoActivo?.estadoActual?.paradaSiguiente
+    ? [trayectoActivo.estadoActual.paradaSiguiente.lat, trayectoActivo.estadoActual.paradaSiguiente.lon]
+    : null;
+
+  const posicionBusActiva = ubicacionUsuario
+    ? [ubicacionUsuario.lat, ubicacionUsuario.lon]
+    : paradaSiguienteTrayecto;
 
   return (
     <div className="mapa-ruta">
@@ -469,7 +510,9 @@ function MapaRuta({ ruta, origen, destino }) {
 
       {!cargandoRecorrido && !cargandoParadasTrip && puntosBusRecortados.length >= 2 && (
         <div className="mapa-ruta__estado">
-          Ruta cargada · baja dentro de {numeroParadasHastaBajar} paradas
+          {trayectoActivo?.estadoActual
+            ? `Seguimiento activo · ${trayectoActivo.estadoActual.paradasRestantes} paradas restantes`
+            : `Ruta cargada · baja dentro de ${numeroParadasHastaBajar} paradas`}
         </div>
       )}
 
@@ -545,7 +588,7 @@ function MapaRuta({ ruta, origen, destino }) {
         {puntoOrigenUsuario && (
           <Marker position={puntoOrigenUsuario} icon={crearIconoMapa('usuario')}>
             <Popup>
-              {origen?.nombre || 'Origen'}
+              {ubicacionUsuario ? 'Tu ubicacion actual' : (origen?.nombre || 'Origen')}
             </Popup>
           </Marker>
         )}
@@ -554,9 +597,9 @@ function MapaRuta({ ruta, origen, destino }) {
           <Marker position={paradaOrigen} icon={crearIconoMapa('parada')}>
             <Popup>
               <div className="popup-parada">
-                <strong>{ruta?.paradaOrigen?.nombre || 'Parada de subida'}</strong>
+                <strong>{tramoMapa?.paradaSalida?.nombre || ruta?.paradaOrigen?.nombre || 'Parada de subida'}</strong>
                 <span>Parada donde subes</span>
-                <span>ID InfoBus: {ruta?.paradaOrigen?.id || 'Sin id'}</span>
+                <span>ID InfoBus: {tramoMapa?.paradaSalida?.id || ruta?.paradaOrigen?.id || 'Sin id'}</span>
                 <span>GTFS stop_id: {stopOrigen || 'Sin stop_id'}</span>
               </div>
             </Popup>
@@ -567,10 +610,32 @@ function MapaRuta({ ruta, origen, destino }) {
           <Marker position={paradaDestino} icon={crearIconoMapa('parada')}>
             <Popup>
               <div className="popup-parada">
-                <strong>{ruta?.paradaDestino?.nombre || 'Parada de bajada'}</strong>
+                <strong>{tramoMapa?.paradaLlegada?.nombre || ruta?.paradaDestino?.nombre || 'Parada de bajada'}</strong>
                 <span>Parada donde bajas</span>
-                <span>ID InfoBus: {ruta?.paradaDestino?.id || 'Sin id'}</span>
+                <span>ID InfoBus: {tramoMapa?.paradaLlegada?.id || ruta?.paradaDestino?.id || 'Sin id'}</span>
                 <span>GTFS stop_id: {stopDestino || 'Sin stop_id'}</span>
+              </div>
+            </Popup>
+          </Marker>
+        )}
+
+        {paradaSiguienteTrayecto && (
+          <Marker position={paradaSiguienteTrayecto} icon={crearIconoMapa('transbordo')}>
+            <Popup>
+              <div className="popup-parada">
+                <strong>{trayectoActivo?.estadoActual?.paradaSiguiente?.nombre || 'Siguiente parada'}</strong>
+                <span>Siguiente parada del trayecto activo</span>
+              </div>
+            </Popup>
+          </Marker>
+        )}
+
+        {posicionBusActiva && (
+          <Marker position={posicionBusActiva} icon={crearIconoMapa('bus')}>
+            <Popup>
+              <div className="popup-parada">
+                <strong>Bus seguido por la app</strong>
+                <span>Visual del trayecto activo sobre la ruta</span>
               </div>
             </Popup>
           </Marker>

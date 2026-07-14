@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   ArrowUpDown,
+  Bell,
   BusFront,
   Clock3,
   Footprints,
@@ -18,7 +19,21 @@ import {
 
 import SelectorLugar from '../componentes/comunes/SelectorLugar';
 import MapaRuta from '../componentes/mapa/MapaRuta';
-import { buscarRutas } from '../servicios/rutasServicio';
+import {
+  buscarRutas
+} from '../servicios/rutasServicio';
+import {
+  cerrarNotificacionesTrayecto,
+  mostrarNotificacionTrayecto,
+  obtenerPermisoNotificaciones,
+  pedirPermisoNotificaciones
+} from '../servicios/notificacionesServicio';
+import {
+  prepararTrayectoActivo,
+  recalcularTrayectoActivo
+} from '../servicios/trayectoActivoServicio';
+
+const CLAVE_TRAYECTO_ACTIVO = 'paradabus_trayecto_activo_v1';
 
 function obtenerFechaActual() {
   return new Date().toISOString().slice(0, 10);
@@ -35,26 +50,6 @@ function obtenerHoraActual() {
 
 function obtenerNombreLugar(lugar) {
   return lugar?.nombre || lugar?.displayName || lugar?.direccion || 'Lugar seleccionado';
-}
-
-function obtenerOpcionesRespuesta(respuesta) {
-  if (Array.isArray(respuesta)) {
-    return respuesta;
-  }
-
-  if (Array.isArray(respuesta?.opciones)) {
-    return respuesta.opciones;
-  }
-
-  if (Array.isArray(respuesta?.rutas)) {
-    return respuesta.rutas;
-  }
-
-  if (Array.isArray(respuesta?.resultados)) {
-    return respuesta.resultados;
-  }
-
-  return [];
 }
 
 function obtenerMinutosInfoBus(ruta) {
@@ -101,7 +96,17 @@ function obtenerTextoHora(hora) {
 }
 
 function obtenerLineaRuta(ruta) {
-  return ruta?.linea || ruta?.codigoLinea || ruta?.routeShortName || 'BUS';
+  if (Array.isArray(ruta?.lineas) && ruta.lineas.length > 0) {
+    return ruta.lineas[0];
+  }
+
+  return ruta?.linea || ruta?.lineaPrincipal || ruta?.codigoLinea || ruta?.routeShortName || 'BUS';
+}
+
+function obtenerLineasSecundarias(ruta) {
+  return (Array.isArray(ruta?.lineas) ? ruta.lineas : [])
+    .filter(Boolean)
+    .slice(1, 3);
 }
 
 function obtenerTipoRuta(ruta) {
@@ -109,7 +114,7 @@ function obtenerTipoRuta(ruta) {
     return `${ruta.transbordos} transbordo${ruta.transbordos > 1 ? 's' : ''}`;
   }
 
-  if (String(ruta?.tipo || '').toUpperCase().includes('TRANSBORDO')) {
+  if (ruta?.esTransbordo) {
     return 'Con transbordo';
   }
 
@@ -140,11 +145,113 @@ function formatearMetros(metros) {
   return `${Math.round(metros)} m`;
 }
 
+function obtenerSegmentoActivo(trayectoActivo) {
+  if (!trayectoActivo) {
+    return null;
+  }
+
+  return trayectoActivo.segmentos?.[trayectoActivo.segmentoActivoIndex] || null;
+}
+
+function guardarTrayectoActivoEnLocal(trayectoActivo) {
+  if (!trayectoActivo) {
+    localStorage.removeItem(CLAVE_TRAYECTO_ACTIVO);
+    return;
+  }
+
+  localStorage.setItem(CLAVE_TRAYECTO_ACTIVO, JSON.stringify(trayectoActivo));
+}
+
+function cargarTrayectoActivoDeLocal() {
+  try {
+    const texto = localStorage.getItem(CLAVE_TRAYECTO_ACTIVO);
+
+    if (!texto) {
+      return null;
+    }
+
+    return JSON.parse(texto);
+  } catch {
+    return null;
+  }
+}
+
+function crearPasosRuta(ruta, destino) {
+  const pasos = [
+    {
+      id: 'origen',
+      icono: Footprints,
+      titulo: 'Camina hasta la parada',
+      descripcion: `${ruta?.minutosAndandoOrigen ?? '--'} min hasta ${obtenerNombreParada(ruta?.paradaOrigen, 'la parada de salida')}`,
+      activo: false
+    }
+  ];
+
+  const tramos = Array.isArray(ruta?.tramos) ? ruta.tramos : [];
+
+  if (tramos.length > 1) {
+    const primerTramo = tramos[0];
+    const segundoTramo = tramos[1];
+
+    pasos.push({
+      id: 'bus-1',
+      icono: BusFront,
+      titulo: `Coge la linea ${primerTramo?.linea || ruta?.linea}`,
+      descripcion: `Sale a las ${obtenerTextoHora(primerTramo?.horaSalidaBus || ruta?.horaSalidaBus)} · ${primerTramo?.minutosBus ?? '--'} min`,
+      activo: true
+    });
+
+    pasos.push({
+      id: 'transbordo',
+      icono: RefreshCw,
+      titulo: 'Haz el transbordo',
+      descripcion: `${ruta?.minutosEsperaTransbordo ?? '--'} min en ${obtenerNombreParada(ruta?.paradaTransbordo, 'la parada de enlace')}`,
+      activo: false
+    });
+
+    pasos.push({
+      id: 'bus-2',
+      icono: BusFront,
+      titulo: `Sube a la linea ${segundoTramo?.linea || 'BUS'}`,
+      descripcion: `Llega a las ${obtenerTextoHora(segundoTramo?.horaLlegadaBus || ruta?.horaLlegadaBus)}`,
+      activo: false
+    });
+  } else {
+    pasos.push({
+      id: 'bus',
+      icono: BusFront,
+      titulo: `Coge la linea ${obtenerLineaRuta(ruta)}`,
+      descripcion: `Sale a las ${obtenerTextoHora(ruta?.horaSalidaBus)} · ${ruta?.minutosBus ?? '--'} min en bus`,
+      activo: true
+    });
+  }
+
+  pasos.push(
+    {
+      id: 'destino-bus',
+      icono: MapPinned,
+      titulo: 'Baja en la parada',
+      descripcion: obtenerNombreParada(ruta?.paradaDestino, 'Parada de destino'),
+      activo: false
+    },
+    {
+      id: 'final',
+      icono: Navigation,
+      titulo: 'Camina hasta tu destino',
+      descripcion: `${ruta?.minutosAndandoDestino ?? '--'} min hasta ${obtenerNombreLugar(destino)}`,
+      activo: false
+    }
+  );
+
+  return pasos;
+}
+
 function TarjetaRuta({ ruta, activa, indice, onSeleccionar }) {
   const minutosInfoBus = obtenerMinutosInfoBus(ruta);
   const claseMinutos = obtenerClaseMinutos(minutosInfoBus);
   const linea = obtenerLineaRuta(ruta);
   const tipoRuta = obtenerTipoRuta(ruta);
+  const lineasSecundarias = obtenerLineasSecundarias(ruta);
   const caminata = ruta?.distanciaAndandoTotalMetros
     ? formatearMetros(ruta.distanciaAndandoTotalMetros)
     : null;
@@ -172,6 +279,16 @@ function TarjetaRuta({ ruta, activa, indice, onSeleccionar }) {
           <span className="linea-bus-pill">
             {linea}
           </span>
+
+          {lineasSecundarias.length > 0 && (
+            <div className="tarjeta-ruta__lineas-secundarias">
+              {lineasSecundarias.map((lineaSecundaria) => (
+                <span key={lineaSecundaria} className="linea-bus-pill linea-bus-pill--suave">
+                  {lineaSecundaria}
+                </span>
+              ))}
+            </div>
+          )}
 
           <div className="tarjeta-ruta__encabezado-texto">
             <strong>{tipoRuta}</strong>
@@ -219,7 +336,9 @@ function TarjetaRuta({ ruta, activa, indice, onSeleccionar }) {
 
         <span>
           <Navigation size={14} />
-          {formatearMinutos(ruta?.minutosBus)}
+          {ruta?.esTransbordo
+            ? `${ruta?.minutosEsperaTransbordo ?? '--'} min transbordo`
+            : formatearMinutos(ruta?.minutosBus)}
         </span>
       </div>
     </button>
@@ -241,7 +360,121 @@ function EstadoVacioRutas() {
   );
 }
 
-function PanelRutaSeleccionada({ ruta, origen, destino, onCerrar }) {
+function PanelTrayectoActivo({
+  trayectoActivo,
+  permisoNotificaciones,
+  onActivarAvisos,
+  onFinalizar,
+  onAbrirRuta
+}) {
+  if (!trayectoActivo) {
+    return null;
+  }
+
+  const segmentoActivo = obtenerSegmentoActivo(trayectoActivo);
+  const estado = trayectoActivo.estadoActual;
+
+  return (
+    <section className="trayecto-activo">
+      <div className="trayecto-activo__cabecera">
+        <div>
+          <p className="pagina-inicio__mini">Trayecto activo</p>
+          <h2>
+            {trayectoActivo.finalizado
+              ? 'Llegada detectada'
+              : `Linea ${segmentoActivo?.linea || 'BUS'} en seguimiento`}
+          </h2>
+          <p className="trayecto-activo__texto">
+            {trayectoActivo.finalizado
+              ? `Ya puedes finalizar el trayecto hacia ${trayectoActivo.destinoFinal}.`
+              : `Te avisaremos antes de bajar y puedes seguir la ruta en el mapa.`}
+          </p>
+        </div>
+
+        <div className="trayecto-activo__estado">
+          <span className={trayectoActivo.finalizado ? 'trayecto-activo__punto trayecto-activo__punto--final' : 'trayecto-activo__punto'} />
+          {trayectoActivo.finalizado ? 'Completado' : 'En marcha'}
+        </div>
+      </div>
+
+      <div className="trayecto-activo__metricas">
+        <article className="trayecto-activo__metrica">
+          <strong>{segmentoActivo?.linea || '--'}</strong>
+          <span>Linea actual</span>
+        </article>
+
+        <article className="trayecto-activo__metrica">
+          <strong>{estado?.paradasRestantes ?? '--'}</strong>
+          <span>Paradas restantes</span>
+        </article>
+
+        <article className="trayecto-activo__metrica">
+          <strong>{estado?.paradaSiguiente?.nombre || '--'}</strong>
+          <span>Siguiente parada</span>
+        </article>
+      </div>
+
+      <div className="trayecto-activo__alerta">
+        <Bell size={16} />
+        <div>
+          <strong>
+            {estado?.avisoSiguienteParada
+              ? (trayectoActivo.segmentoActivoIndex < (trayectoActivo.segmentos.length - 1)
+                ? 'Siguiente parada: preparate para el transbordo'
+                : 'Siguiente parada: baja')
+              : 'Seguimiento activo del viaje'}
+          </strong>
+          <span>
+            {estado?.distanciaSiguienteParada
+              ? `Estas a unos ${estado.distanciaSiguienteParada} m de la siguiente parada.`
+              : 'La app ira actualizando el siguiente punto del trayecto.'}
+          </span>
+        </div>
+      </div>
+
+      <div className="trayecto-activo__acciones">
+        <button
+          type="button"
+          className="boton-buscar-ruta"
+          onClick={onAbrirRuta}
+        >
+          <Route size={18} />
+          Ver ruta
+        </button>
+
+        {permisoNotificaciones !== 'granted' && permisoNotificaciones !== 'unsupported' && (
+          <button
+            type="button"
+            className="boton-ubicacion-ruta"
+            onClick={onActivarAvisos}
+          >
+            <Bell size={17} />
+            Activar avisos
+          </button>
+        )}
+
+        <button
+          type="button"
+          className="boton-secundario-trayecto"
+          onClick={onFinalizar}
+        >
+          Finalizar trayecto
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function PanelRutaSeleccionada({
+  ruta,
+  origen,
+  destino,
+  onCerrar,
+  onIniciarTrayecto,
+  onFinalizarTrayecto,
+  trayectoActivo,
+  preparandoTrayecto
+}) {
   if (!ruta) {
     return (
       <aside className="panel-ruta-app panel-ruta-app--vacio">
@@ -260,6 +493,9 @@ function PanelRutaSeleccionada({ ruta, origen, destino, onCerrar }) {
   const claseMinutos = obtenerClaseMinutos(minutosInfoBus);
   const linea = obtenerLineaRuta(ruta);
   const caminata = formatearMetros(ruta?.distanciaAndandoTotalMetros);
+  const pasos = crearPasosRuta(ruta, destino);
+  const segmentoActivo = obtenerSegmentoActivo(trayectoActivo);
+  const trayectoCoincide = Boolean(trayectoActivo?.rutaVisualId && trayectoActivo.rutaVisualId === ruta.idVisual);
 
   return (
     <aside className="panel-ruta-app panel-ruta-app--visible">
@@ -318,11 +554,45 @@ function PanelRutaSeleccionada({ ruta, origen, destino, onCerrar }) {
         </div>
 
         <div>
-          <strong>Panel pensado para seguir el viaje en marcha</strong>
+          <strong>
+            {trayectoCoincide
+              ? 'Trayecto en curso sobre esta ruta'
+              : 'Panel pensado para seguir el viaje en marcha'}
+          </strong>
           <span>
-            Tienes el recorrido, la subida, la bajada y la caminata final en la misma vista.
+            {trayectoCoincide
+              ? 'La ruta seleccionada esta siendo monitorizada con avisos y siguiente parada.'
+              : 'Tienes recorrido, subida, bajada y caminata final en la misma vista.'}
           </span>
         </div>
+      </div>
+
+      <div className="panel-ruta-app__acciones">
+        {!trayectoCoincide && (
+          <button
+            type="button"
+            className="boton-buscar-ruta"
+            onClick={() => onIniciarTrayecto(ruta)}
+            disabled={preparandoTrayecto}
+          >
+            {preparandoTrayecto ? (
+              <Loader2 className="icono-girando" size={18} />
+            ) : (
+              <Navigation size={18} />
+            )}
+            Iniciar trayecto
+          </button>
+        )}
+
+        {trayectoCoincide && (
+          <button
+            type="button"
+            className="boton-secundario-trayecto"
+            onClick={onFinalizarTrayecto}
+          >
+            Finalizar trayecto
+          </button>
+        )}
       </div>
 
       <div className="panel-ruta-app__mapa">
@@ -330,61 +600,36 @@ function PanelRutaSeleccionada({ ruta, origen, destino, onCerrar }) {
           ruta={ruta}
           origen={origen}
           destino={destino}
+          trayectoActivo={trayectoCoincide ? trayectoActivo : null}
+          segmentoSeguimiento={trayectoCoincide ? segmentoActivo : null}
+          ubicacionUsuario={trayectoCoincide ? trayectoActivo?.ultimaUbicacionUsuario : null}
         />
       </div>
 
       <div className="timeline-ruta">
-        <div className="timeline-ruta__paso">
-          <div className="timeline-ruta__icono">
-            <Footprints size={17} />
-          </div>
+        {pasos.map((paso) => {
+          const Icono = paso.icono;
 
-          <div>
-            <strong>Camina hasta la parada</strong>
-            <span>
-              {ruta?.minutosAndandoOrigen ?? '--'} min hasta {obtenerNombreParada(ruta?.paradaOrigen, 'la parada de salida')}
-            </span>
-          </div>
-        </div>
+          return (
+            <div
+              key={paso.id}
+              className={
+                paso.activo
+                  ? 'timeline-ruta__paso timeline-ruta__paso--activo'
+                  : 'timeline-ruta__paso'
+              }
+            >
+              <div className="timeline-ruta__icono">
+                <Icono size={17} />
+              </div>
 
-        <div className="timeline-ruta__paso timeline-ruta__paso--activo">
-          <div className="timeline-ruta__icono">
-            <BusFront size={17} />
-          </div>
-
-          <div>
-            <strong>Coge la linea {linea}</strong>
-            <span>
-              Sale a las {obtenerTextoHora(ruta?.horaSalidaBus)} · {ruta?.minutosBus ?? '--'} min en bus
-            </span>
-          </div>
-        </div>
-
-        <div className="timeline-ruta__paso">
-          <div className="timeline-ruta__icono">
-            <MapPinned size={17} />
-          </div>
-
-          <div>
-            <strong>Baja en la parada</strong>
-            <span>
-              {obtenerNombreParada(ruta?.paradaDestino, 'Parada de destino')}
-            </span>
-          </div>
-        </div>
-
-        <div className="timeline-ruta__paso">
-          <div className="timeline-ruta__icono">
-            <Navigation size={17} />
-          </div>
-
-          <div>
-            <strong>Camina hasta tu destino</strong>
-            <span>
-              {ruta?.minutosAndandoDestino ?? '--'} min hasta {obtenerNombreLugar(destino)}
-            </span>
-          </div>
-        </div>
+              <div>
+                <strong>{paso.titulo}</strong>
+                <span>{paso.descripcion}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </aside>
   );
@@ -393,10 +638,24 @@ function PanelRutaSeleccionada({ ruta, origen, destino, onCerrar }) {
 function InicioPagina() {
   const [origenSeleccionado, setOrigenSeleccionado] = useState(null);
   const [destinoSeleccionado, setDestinoSeleccionado] = useState(null);
-  const [rutas, setRutas] = useState([]);
+  const [resultadoBusqueda, setResultadoBusqueda] = useState({
+    opciones: [],
+    directas: [],
+    transbordos: [],
+    transbordosConsultados: false,
+    totalDirectas: 0,
+    totalTransbordos: 0,
+    mensaje: ''
+  });
   const [rutaSeleccionada, setRutaSeleccionada] = useState(null);
+  const [trayectoActivo, setTrayectoActivo] = useState(null);
   const [cargando, setCargando] = useState(false);
+  const [preparandoTrayecto, setPreparandoTrayecto] = useState(false);
   const [error, setError] = useState('');
+  const [permisoNotificaciones, setPermisoNotificaciones] = useState(obtenerPermisoNotificaciones());
+
+  const panelTrayectoRef = useRef(null);
+  const watchUbicacionRef = useRef(null);
 
   const puedeBuscar = Boolean(
     origenSeleccionado?.lat &&
@@ -404,6 +663,8 @@ function InicioPagina() {
     destinoSeleccionado?.lat &&
     destinoSeleccionado?.lon
   );
+
+  const rutas = resultadoBusqueda.opciones || [];
 
   const resumenBusqueda = useMemo(() => {
     if (!origenSeleccionado && !destinoSeleccionado) {
@@ -438,16 +699,24 @@ function InicioPagina() {
         icono: Clock3
       },
       {
-        id: 'walk',
-        etiqueta: 'Caminata',
-        valor: mejorRuta ? (formatearMetros(mejorRuta?.distanciaAndandoTotalMetros) || '--') : '--',
-        icono: Footprints
+        id: 'transfer',
+        etiqueta: 'Con transbordo',
+        valor: resultadoBusqueda.totalTransbordos > 0 ? String(resultadoBusqueda.totalTransbordos) : '--',
+        icono: RefreshCw
       }
     ];
-  }, [mejorRuta, rutas.length]);
+  }, [mejorRuta, resultadoBusqueda.totalTransbordos, rutas.length]);
 
   function limpiarRutas() {
-    setRutas([]);
+    setResultadoBusqueda({
+      opciones: [],
+      directas: [],
+      transbordos: [],
+      transbordosConsultados: false,
+      totalDirectas: 0,
+      totalTransbordos: 0,
+      mensaje: ''
+    });
     setRutaSeleccionada(null);
   }
 
@@ -508,7 +777,7 @@ function InicioPagina() {
     limpiarRutas();
   }
 
-  async function buscarOpcionesRuta() {
+  async function buscarOpcionesRuta(opcionesBusqueda = {}) {
     if (!puedeBuscar) {
       setError('Elige un origen y un destino antes de buscar.');
       return;
@@ -526,24 +795,269 @@ function InicioPagina() {
         fecha: obtenerFechaActual(),
         hora: obtenerHoraActual(),
         maxResultados: 6
+      }, opcionesBusqueda);
+
+      setResultadoBusqueda(respuesta);
+      setRutaSeleccionada((actual) => {
+        if (actual) {
+          const encontrada = (respuesta.opciones || []).find((ruta) => ruta.idVisual === actual.idVisual);
+          return encontrada || respuesta.opciones?.[0] || null;
+        }
+
+        return respuesta.opciones?.[0] || null;
       });
 
-      const opciones = obtenerOpcionesRespuesta(respuesta);
-
-      setRutas(opciones);
-      setRutaSeleccionada(opciones[0] || null);
-
-      if (opciones.length === 0) {
-        setError('No encontre una ruta directa para ese trayecto. La pantalla ya queda preparada para cuando metas mas variantes desde backend.');
+      if ((respuesta.opciones || []).length === 0) {
+        setError('No encontre rutas utiles para ese trayecto.');
       }
     } catch (errorPeticion) {
       setError(errorPeticion.message || 'No se pudieron buscar rutas.');
-      setRutas([]);
-      setRutaSeleccionada(null);
+      limpiarRutas();
     } finally {
       setCargando(false);
     }
   }
+
+  async function activarAvisosTrayecto() {
+    const permiso = await pedirPermisoNotificaciones();
+    setPermisoNotificaciones(permiso);
+
+    if (permiso !== 'granted') {
+      setError('No se pudieron activar las notificaciones del navegador.');
+    }
+  }
+
+  async function iniciarTrayecto(ruta) {
+    try {
+      setPreparandoTrayecto(true);
+      setError('');
+
+      const permiso = await pedirPermisoNotificaciones();
+      setPermisoNotificaciones(permiso);
+
+      const preparado = await prepararTrayectoActivo(ruta);
+      const recalculado = recalcularTrayectoActivo(
+        preparado,
+        trayectoActivo?.ultimaUbicacionUsuario || null
+      );
+
+      setTrayectoActivo(recalculado);
+
+      await mostrarNotificacionTrayecto({
+        titulo: 'Trayecto iniciado',
+        cuerpo: `Seguimiento activo hacia ${recalculado.destinoFinal}.`,
+        tag: `paradabus-trayecto-${recalculado.id}`,
+        datos: {
+          trayectoId: recalculado.id
+        }
+      });
+    } catch (errorTrayecto) {
+      setError(errorTrayecto.message || 'No se pudo iniciar el trayecto.');
+    } finally {
+      setPreparandoTrayecto(false);
+    }
+  }
+
+  async function finalizarTrayecto() {
+    if (watchUbicacionRef.current !== null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchUbicacionRef.current);
+      watchUbicacionRef.current = null;
+    }
+
+    await cerrarNotificacionesTrayecto();
+    setTrayectoActivo(null);
+  }
+
+  function abrirRutaDesdeTrayecto() {
+    panelTrayectoRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+
+  useEffect(() => {
+    const trayectoGuardado = cargarTrayectoActivoDeLocal();
+
+    if (trayectoGuardado) {
+      setTrayectoActivo(trayectoGuardado);
+    }
+
+    const accionUrl = new URLSearchParams(window.location.search).get('trayectoAccion');
+
+    if (accionUrl === 'finalizar-trayecto') {
+      finalizarTrayecto();
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
+    guardarTrayectoActivoEnLocal(trayectoActivo);
+  }, [trayectoActivo]);
+
+  useEffect(() => {
+    if (!trayectoActivo || trayectoActivo.finalizado) {
+      if (watchUbicacionRef.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchUbicacionRef.current);
+        watchUbicacionRef.current = null;
+      }
+
+      return undefined;
+    }
+
+    if (!navigator.geolocation || watchUbicacionRef.current !== null) {
+      return undefined;
+    }
+
+    watchUbicacionRef.current = navigator.geolocation.watchPosition(
+      (posicion) => {
+        const ubicacion = {
+          lat: posicion.coords.latitude,
+          lon: posicion.coords.longitude
+        };
+
+        setTrayectoActivo((actual) => {
+          if (!actual) {
+            return actual;
+          }
+
+          return recalcularTrayectoActivo(actual, ubicacion);
+        });
+      },
+      () => {
+        setTrayectoActivo((actual) => {
+          if (!actual) {
+            return actual;
+          }
+
+          return recalcularTrayectoActivo(actual, actual.ultimaUbicacionUsuario || null);
+        });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 5000
+      }
+    );
+
+    return () => {
+      if (watchUbicacionRef.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchUbicacionRef.current);
+        watchUbicacionRef.current = null;
+      }
+    };
+  }, [trayectoActivo?.id, trayectoActivo?.finalizado]);
+
+  useEffect(() => {
+    if (!trayectoActivo || trayectoActivo.finalizado) {
+      return undefined;
+    }
+
+    const intervalo = window.setInterval(() => {
+      setTrayectoActivo((actual) => {
+        if (!actual) {
+          return actual;
+        }
+
+        return recalcularTrayectoActivo(actual, actual.ultimaUbicacionUsuario || null);
+      });
+    }, 15000);
+
+    return () => window.clearInterval(intervalo);
+  }, [trayectoActivo?.id, trayectoActivo?.finalizado]);
+
+  useEffect(() => {
+    if (!trayectoActivo?.estadoActual) {
+      return;
+    }
+
+    const estado = trayectoActivo.estadoActual;
+    const segmentoActivo = obtenerSegmentoActivo(trayectoActivo);
+
+    if (trayectoActivo.finalizado) {
+      const clave = `fin-${trayectoActivo.id}`;
+
+      if (!trayectoActivo.alertasEmitidas?.includes(clave)) {
+        setTrayectoActivo((actual) => ({
+          ...actual,
+          alertasEmitidas: [
+            ...(actual.alertasEmitidas || []),
+            clave
+          ]
+        }));
+
+        mostrarNotificacionTrayecto({
+          titulo: 'Trayecto completado',
+          cuerpo: `Has llegado a ${trayectoActivo.destinoFinal}.`,
+          tag: `paradabus-trayecto-${trayectoActivo.id}`,
+          datos: {
+            trayectoId: trayectoActivo.id
+          }
+        });
+      }
+
+      return;
+    }
+
+    if (!estado.avisoSiguienteParada) {
+      return;
+    }
+
+    const clave = `aviso-${trayectoActivo.id}-${trayectoActivo.segmentoActivoIndex}-${estado.paradaSiguiente?.stopId || estado.paradaSiguiente?.idParada || 'parada'}`;
+
+    if (trayectoActivo.alertasEmitidas?.includes(clave)) {
+      return;
+    }
+
+    setTrayectoActivo((actual) => ({
+      ...actual,
+      alertasEmitidas: [
+        ...(actual.alertasEmitidas || []),
+        clave
+      ]
+    }));
+
+    const esUltimoTramo = trayectoActivo.segmentoActivoIndex === trayectoActivo.segmentos.length - 1;
+
+    mostrarNotificacionTrayecto({
+      titulo: esUltimoTramo ? 'Siguiente parada, baja' : 'Siguiente parada, preparate para transbordo',
+      cuerpo: esUltimoTramo
+        ? `Tu parada es ${estado.paradaSiguiente?.nombre || trayectoActivo.destinoFinal}.`
+        : `Tu enlace sera en ${estado.paradaSiguiente?.nombre || segmentoActivo?.paradaLlegada?.nombre}.`,
+      tag: `paradabus-trayecto-${trayectoActivo.id}`,
+      requireInteraction: true,
+      datos: {
+        trayectoId: trayectoActivo.id
+      }
+    });
+  }, [trayectoActivo]);
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) {
+      return undefined;
+    }
+
+    function manejarMensajeServicio(evento) {
+      const datos = evento.data || {};
+
+      if (datos.type !== 'PARADABUS_NOTIFICACION_ACCION') {
+        return;
+      }
+
+      if (datos.accion === 'finalizar-trayecto') {
+        finalizarTrayecto();
+      }
+
+      if (datos.accion === 'abrir-trayecto') {
+        abrirRutaDesdeTrayecto();
+      }
+    }
+
+    navigator.serviceWorker.addEventListener('message', manejarMensajeServicio);
+
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', manejarMensajeServicio);
+    };
+  }, []);
 
   return (
     <section className="pagina-rutas-app">
@@ -568,8 +1082,8 @@ function InicioPagina() {
               </h1>
 
               <p className="buscador-ruta-app__intro">
-                Inspirado en apps de movilidad: busca rapido, cambia origen y destino,
-                compara tarjetas y sigue el trayecto sin perderte en la interfaz.
+                Ahora la busqueda ya deja preparada la parte de transbordos y el
+                modo trayecto activo con aviso antes de bajar.
               </p>
             </div>
 
@@ -581,8 +1095,8 @@ function InicioPagina() {
 
           <div className="buscador-ruta-app__hero-tags">
             <span className="chip-app chip-app--activo">Tiempo real</span>
-            <span className="chip-app">Ruta rapida</span>
-            <span className="chip-app">Pensado para movil</span>
+            <span className="chip-app">Trayecto activo</span>
+            <span className="chip-app">Transbordos ligeros</span>
           </div>
 
           <div className="buscador-ruta-app__campos">
@@ -642,7 +1156,7 @@ function InicioPagina() {
             <button
               type="button"
               className="boton-buscar-ruta"
-              onClick={buscarOpcionesRuta}
+              onClick={() => buscarOpcionesRuta()}
               disabled={cargando || !puedeBuscar}
             >
               {cargando ? (
@@ -689,6 +1203,16 @@ function InicioPagina() {
           )}
         </section>
 
+        <div ref={panelTrayectoRef}>
+          <PanelTrayectoActivo
+            trayectoActivo={trayectoActivo}
+            permisoNotificaciones={permisoNotificaciones}
+            onActivarAvisos={activarAvisosTrayecto}
+            onFinalizar={finalizarTrayecto}
+            onAbrirRuta={abrirRutaDesdeTrayecto}
+          />
+        </div>
+
         <section className="resultados-rutas-app">
           <div className="resultados-rutas-app__cabecera">
             <div>
@@ -701,7 +1225,7 @@ function InicioPagina() {
               </h2>
 
               <p className="resultados-rutas-app__texto">
-                Pulsa una tarjeta para ver el mapa y el seguimiento del viaje.
+                Directas primero. Si hace falta, la app ya puede sacar transbordos sin cargarlo todo siempre.
               </p>
             </div>
 
@@ -713,13 +1237,30 @@ function InicioPagina() {
               <button
                 type="button"
                 className="resultados-rutas-app__actualizar"
-                onClick={buscarOpcionesRuta}
+                onClick={() => buscarOpcionesRuta()}
                 disabled={cargando || !puedeBuscar}
               >
                 <RefreshCw size={16} />
               </button>
             </div>
           </div>
+
+          {!resultadoBusqueda.transbordosConsultados && resultadoBusqueda.totalDirectas > 0 && (
+            <div className="resultados-rutas-app__aviso">
+              <span>
+                Busqueda rapida activa: se han mostrado primero las directas.
+              </span>
+
+              <button
+                type="button"
+                className="resultados-rutas-app__boton-transbordo"
+                onClick={() => buscarOpcionesRuta({ forzarTransbordos: true })}
+                disabled={cargando}
+              >
+                Ver tambien transbordos
+              </button>
+            </div>
+          )}
 
           {cargando && (
             <div className="skeleton-rutas">
@@ -737,10 +1278,10 @@ function InicioPagina() {
             <div className="resultados-rutas-app__lista">
               {rutas.map((ruta, indice) => (
                 <TarjetaRuta
-                  key={`${ruta?.tripId || ruta?.routeId || 'ruta'}-${indice}`}
+                  key={ruta.idVisual || `${ruta?.tripId || ruta?.routeId || 'ruta'}-${indice}`}
                   ruta={ruta}
                   indice={indice}
-                  activa={ruta === rutaSeleccionada}
+                  activa={ruta.idVisual === rutaSeleccionada?.idVisual}
                   onSeleccionar={() => setRutaSeleccionada(ruta)}
                 />
               ))}
@@ -753,11 +1294,15 @@ function InicioPagina() {
           origen={origenSeleccionado}
           destino={destinoSeleccionado}
           onCerrar={() => setRutaSeleccionada(null)}
+          onIniciarTrayecto={iniciarTrayecto}
+          onFinalizarTrayecto={finalizarTrayecto}
+          trayectoActivo={trayectoActivo}
+          preparandoTrayecto={preparandoTrayecto}
         />
 
         <div className="rutas-app-shell__ayuda">
           <Sparkles size={16} />
-          La nueva interfaz ya esta preparada para crecer con transbordos, filtros y favoritos sin perder claridad.
+          La interfaz ya tiene base para directas, transbordos, trayecto activo, aviso antes de bajar y notificaciones sobre HTTPS.
         </div>
       </div>
     </section>
