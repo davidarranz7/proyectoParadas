@@ -319,7 +319,7 @@ function SelectorLugar({
             className="selector-lugar__guardar"
             onClick={() => onGuardarLugarGuardado('casa', valor)}
           >
-            Guardar como Casa
+            Guardar en Casa
           </button>
 
           <button
@@ -327,7 +327,7 @@ function SelectorLugar({
             className="selector-lugar__guardar"
             onClick={() => onGuardarLugarGuardado('trabajo', valor)}
           >
-            Guardar como Trabajo
+            Guardar en Trabajo
           </button>
         </div>
       )}
@@ -371,8 +371,8 @@ function SelectorLugar({
               </span>
 
               <span>
-                <strong>Usar mi ubicacion actual</strong>
-                <small>Permitir ubicacion exacta del dispositivo</small>
+                <strong>Mi ubicacion</strong>
+                <small>GPS del dispositivo</small>
               </span>
             </button>
           )}
@@ -387,15 +387,15 @@ function SelectorLugar({
             </span>
 
             <span>
-              <strong>Elegir en el mapa</strong>
-              <small>Marcar un punto manualmente</small>
+              <strong>Marcar en mapa</strong>
+              <small>Elegir punto</small>
             </span>
           </button>
 
           {mostrarHistorial && (
             <>
               <p className="selector-lugar__titulo-lista">
-                Busquedas recientes
+                Recientes
               </p>
 
               {historial.map((lugar, indice) => (
@@ -438,7 +438,7 @@ function SelectorLugar({
 
               {!buscandoSugerencias && !errorBusqueda && sugerencias.length === 0 && (
                 <p className="selector-lugar__sin-resultados">
-                  Pulsa Enter para buscar y seleccionar automaticamente.
+                  Pulsa Enter para buscar.
                 </p>
               )}
 
@@ -464,7 +464,7 @@ function SelectorLugar({
 
           {!mostrarHistorial && !mostrarSugerencias && tipo !== 'origen' && (
             <p className="selector-lugar__sin-resultados">
-              Escribe para buscar un lugar o elige un punto en el mapa.
+              Busca un lugar o marca en mapa.
             </p>
           )}
         </div>

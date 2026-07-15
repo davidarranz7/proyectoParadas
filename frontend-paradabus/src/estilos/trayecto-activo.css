@@ -120,6 +120,27 @@
   font-weight: 700;
 }
 
+.trayecto-activo__resumen-bajada {
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+}
+
+.trayecto-activo__resumen-bajada strong {
+  display: block;
+  font-size: 0.96rem;
+  font-weight: 900;
+}
+
+.trayecto-activo__resumen-bajada span {
+  display: block;
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
 .trayecto-activo__acciones {
   display: flex;
   flex-wrap: wrap;

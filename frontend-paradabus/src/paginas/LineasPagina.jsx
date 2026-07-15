@@ -10,6 +10,11 @@ import {
   X
 } from 'lucide-react';
 
+import BottomSheet from '../componentes/comunes/BottomSheet';
+import BotonAyuda from '../componentes/comunes/BotonAyuda';
+import BandaAvisosServicio from '../componentes/comunes/BandaAvisosServicio';
+import MensajeError from '../componentes/comunes/MensajeError';
+import SkeletonTarjeta from '../componentes/comunes/SkeletonTarjeta';
 import MapaLineaDetalle from '../componentes/mapa/MapaLineaDetalle';
 import {
   obtenerHorariosLinea,
@@ -164,6 +169,24 @@ function obtenerSalidasVisibles(salidas) {
   return (proximas.length > 0 ? proximas : salidas).slice(0, 18);
 }
 
+function normalizarEtiquetaGrupoHorario(grupo) {
+  const texto = `${grupo?.codigo || ''} ${grupo?.etiqueta || ''}`.toLowerCase();
+
+  if (texto.includes('labor') || texto.includes('lun') || texto.includes('vier')) {
+    return 'Lunes a viernes';
+  }
+
+  if (texto.includes('sab')) {
+    return 'Sabado';
+  }
+
+  if (texto.includes('dom') || texto.includes('fest')) {
+    return 'Domingo';
+  }
+
+  return grupo?.etiqueta || 'Horarios';
+}
+
 function TarjetaLinea({ activa, linea, onSeleccionar }) {
   const colorLinea = normalizarColorLinea(linea?.color);
 
@@ -206,7 +229,7 @@ function BloqueHorarios({
       <div className="linea-detalle__cabecera-simple">
         <div>
           <p className="pagina-inicio__mini">Horarios</p>
-          <h3>Salidas por tipo de dia</h3>
+          <h3>Salidas por dia</h3>
         </div>
 
         <div className="linea-detalle__mini-resumen">
@@ -227,7 +250,7 @@ function BloqueHorarios({
               }
               onClick={() => onCambiarGrupo(grupo.codigo)}
             >
-              {grupo.etiqueta}
+              {normalizarEtiquetaGrupoHorario(grupo)}
             </button>
           ))}
         </div>
@@ -270,7 +293,7 @@ function BloqueParadas({ paradasVisibles }) {
       <div className="linea-detalle__cabecera-simple">
         <div>
           <p className="pagina-inicio__mini">Paradas</p>
-          <h3>Secuencia completa</h3>
+          <h3>Paradas del sentido</h3>
         </div>
 
         <div className="linea-detalle__mini-resumen">
@@ -406,7 +429,7 @@ function DetalleLineaContenido({
         <div className="linea-detalle__cabecera-simple">
           <div>
             <p className="pagina-inicio__mini">Sentidos</p>
-            <h3>Cabeceras disponibles</h3>
+            <h3>Sentidos</h3>
           </div>
 
           <div className="linea-detalle__estado-chip">
@@ -775,10 +798,12 @@ function LineasPagina() {
       <header className="cabecera-panel-app">
         <div>
           <p className="pagina-inicio__mini">Lineas</p>
-          <h1>Todas las lineas, sentidos, recorridos y horarios en una vista mas util.</h1>
+          <div className="cabecera-con-ayuda">
+            <h1>Lineas y horarios</h1>
+            <BotonAyuda texto="Elige una linea para ver recorrido y paradas." />
+          </div>
           <p>
-            En movil la consulta se abre como una ficha rapida para no obligarte a hacer scroll
-            de toda la pantalla cada vez que quieres ver horarios o el recorrido.
+            Pulsa una linea y abre su recorrido, sentidos y horarios.
           </p>
         </div>
 
@@ -786,10 +811,12 @@ function LineasPagina() {
           <span className="chip-app chip-app--activo">{lineas.length || 0} lineas</span>
           <span className="chip-app">{lineaActiva ? `${sentidos.length} sentidos` : 'Sin seleccion'}</span>
           <span className="chip-app">
-            {grupoHorarioActivo?.etiqueta || 'Horarios GTFS'}
+            {grupoHorarioActivo ? normalizarEtiquetaGrupoHorario(grupoHorarioActivo) : 'Horarios'}
           </span>
         </div>
       </header>
+
+      <BandaAvisosServicio linea={lineaActiva?.codigo} />
 
       <div className="lineas-app-grid">
         <aside className="lineas-listado">
@@ -829,16 +856,10 @@ function LineasPagina() {
             </button>
           )}
 
-          {errorLineas && (
-            <div className="mensaje-error">
-              {errorLineas}
-            </div>
-          )}
+          <MensajeError>{errorLineas}</MensajeError>
 
           {cargandoLineas && (
-            <div className="lineas-listado__estado">
-              Cargando lineas...
-            </div>
+            <SkeletonTarjeta cantidad={5} variante="linea" />
           )}
 
           {!cargandoLineas && !errorLineas && lineasFiltradas.length === 0 && (
@@ -895,37 +916,32 @@ function LineasPagina() {
         )}
       </div>
 
-      {esMovil && detalleMovilAbierto && lineaActiva && (
-        <div className="linea-detalle-movil">
-          <div
-            className="linea-detalle-movil__fondo"
-            onClick={() => setDetalleMovilAbierto(false)}
+      <BottomSheet
+        abierto={esMovil && detalleMovilAbierto && Boolean(lineaActiva)}
+        onCerrar={() => setDetalleMovilAbierto(false)}
+        titulo={lineaActiva ? `Linea ${lineaActiva.codigo}` : 'Linea'}
+      >
+        {lineaActiva && (
+          <DetalleLineaContenido
+            cargandoDetalle={cargandoDetalle}
+            detalleMapa={detalleMapa}
+            detalleRecorrido={detalleRecorrido}
+            errorDetalle={errorDetalle}
+            esMovil
+            grupoHorarioActivo={grupoHorarioActivo}
+            gruposHorario={gruposHorario}
+            lineaActiva={lineaActiva}
+            onCambiarGrupoHorario={setGrupoHorarioActivoCodigo}
+            onCambiarPestana={setPestanaDetalle}
+            onCerrarMovil={() => setDetalleMovilAbierto(false)}
+            paradasVisibles={paradasVisibles}
+            pestanaActiva={pestanaDetalle}
+            sentidoActivo={sentidoActivo}
+            sentidos={sentidos}
+            setSentido={(sentido) => cargarDetalleSentido(lineaActiva, sentido)}
           />
-
-          <section className="linea-detalle-movil__panel">
-            <div className="linea-detalle-movil__tirador" />
-
-            <DetalleLineaContenido
-              cargandoDetalle={cargandoDetalle}
-              detalleMapa={detalleMapa}
-              detalleRecorrido={detalleRecorrido}
-              errorDetalle={errorDetalle}
-              esMovil
-              grupoHorarioActivo={grupoHorarioActivo}
-              gruposHorario={gruposHorario}
-              lineaActiva={lineaActiva}
-              onCambiarGrupoHorario={setGrupoHorarioActivoCodigo}
-              onCambiarPestana={setPestanaDetalle}
-              onCerrarMovil={() => setDetalleMovilAbierto(false)}
-              paradasVisibles={paradasVisibles}
-              pestanaActiva={pestanaDetalle}
-              sentidoActivo={sentidoActivo}
-              sentidos={sentidos}
-              setSentido={(sentido) => cargarDetalleSentido(lineaActiva, sentido)}
-            />
-          </section>
-        </div>
-      )}
+        )}
+      </BottomSheet>
     </section>
   );
 }

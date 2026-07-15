@@ -4,10 +4,12 @@ import com.paradabus.cliente.ClienteDatosVigo;
 import com.paradabus.dto.ComparacionParadasDTO;
 import com.paradabus.dto.ParadaCercanaDTO;
 import com.paradabus.dto.ParadaDTO;
+import com.paradabus.dto.ParadasMapaResultadoDTO;
 import com.paradabus.modelo.Parada;
 import com.paradabus.repositorio.ParadaRepositorio;
 import com.paradabus.utilidad.DistanciaUtilidad;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,10 +21,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ParadaServicio {
 
+    private static final int ZOOM_MINIMO_MAPA = 14;
+    private static final int LIMITE_BUSQUEDA_POR_DEFECTO = 10;
+
     private final ParadaRepositorio paradaRepositorio;
     private final ClienteDatosVigo clienteDatosVigo;
 
-    // Devuelve todas las paradas
     public List<ParadaDTO> listarParadas() {
         return paradaRepositorio.findAll()
                 .stream()
@@ -30,15 +34,29 @@ public class ParadaServicio {
                 .toList();
     }
 
-    // Busca paradas por nombre
     public List<ParadaDTO> buscarParadasPorNombre(String texto) {
-        return paradaRepositorio.findByNombreContainingIgnoreCase(texto)
-                .stream()
+        return buscarParadasPorNombre(texto, null);
+    }
+
+    public List<ParadaDTO> buscarParadasPorNombre(String texto, Integer limite) {
+        String textoBuscar = texto == null ? "" : texto.trim();
+
+        if (textoBuscar.isEmpty()) {
+            return List.of();
+        }
+
+        List<Parada> paradas = limite == null
+                ? paradaRepositorio.findByNombreContainingIgnoreCaseOrderByNombreAsc(textoBuscar)
+                : paradaRepositorio.findByNombreContainingIgnoreCaseOrderByNombreAsc(
+                textoBuscar,
+                PageRequest.of(0, limitarNumero(limite, 1, 25, LIMITE_BUSQUEDA_POR_DEFECTO))
+        );
+
+        return paradas.stream()
                 .map(this::convertirADTO)
                 .toList();
     }
 
-    // Busca una parada por ID
     public ParadaDTO buscarParadaPorId(Long id) {
         Parada parada = paradaRepositorio.findById(id)
                 .orElseThrow(() -> new RuntimeException("No existe la parada con id: " + id));
@@ -46,7 +64,6 @@ public class ParadaServicio {
         return convertirADTO(parada);
     }
 
-    // Compara dos paradas y devuelve las líneas que tienen en común
     public ComparacionParadasDTO compararParadas(Long idOrigen, Long idDestino) {
         Parada paradaOrigen = paradaRepositorio.findById(idOrigen)
                 .orElseThrow(() -> new RuntimeException("No existe la parada origen con id: " + idOrigen));
@@ -70,7 +87,6 @@ public class ParadaServicio {
         );
     }
 
-    // Busca paradas cercanas a una ubicación
     public List<ParadaCercanaDTO> buscarParadasCercanas(
             Double lat,
             Double lon,
@@ -80,13 +96,17 @@ public class ParadaServicio {
             throw new RuntimeException("La latitud y la longitud son obligatorias");
         }
 
-        if (radioMetros == null || radioMetros <= 0) {
-            radioMetros = 500.0;
-        }
+        double radioFinal = radioMetros == null || radioMetros <= 0 ? 500.0 : radioMetros;
+        double latDelta = radioFinal / 111_320d;
+        double lonFactor = Math.max(0.2d, Math.cos(Math.toRadians(lat)));
+        double lonDelta = radioFinal / (111_320d * lonFactor);
 
-        final double radioFinal = radioMetros;
-
-        return paradaRepositorio.findAll()
+        return paradaRepositorio.findByLatBetweenAndLonBetween(
+                        lat - latDelta,
+                        lat + latDelta,
+                        lon - lonDelta,
+                        lon + lonDelta
+                )
                 .stream()
                 .map(parada -> convertirAParadaCercanaDTO(parada, lat, lon))
                 .filter(parada -> parada.distanciaMetros() <= radioFinal)
@@ -94,7 +114,65 @@ public class ParadaServicio {
                 .toList();
     }
 
-    // Importa las paradas desde datos abiertos de Vigo y las guarda en base de datos
+    public ParadasMapaResultadoDTO buscarParadasParaMapa(
+            Double minLat,
+            Double maxLat,
+            Double minLon,
+            Double maxLon,
+            String buscar,
+            Integer limite
+    ) {
+        if (minLat == null || maxLat == null || minLon == null || maxLon == null) {
+            throw new RuntimeException("Los limites del mapa son obligatorios");
+        }
+
+        int limiteFinal = limitarNumero(limite, 20, 260, 160);
+        String textoBuscar = buscar == null ? "" : buscar.trim();
+        boolean conBusqueda = !textoBuscar.isEmpty();
+
+        long totalParadas = conBusqueda
+                ? paradaRepositorio.countByNombreContainingIgnoreCaseAndLatBetweenAndLonBetween(
+                textoBuscar,
+                minLat,
+                maxLat,
+                minLon,
+                maxLon
+        )
+                : paradaRepositorio.countByLatBetweenAndLonBetween(
+                minLat,
+                maxLat,
+                minLon,
+                maxLon
+        );
+
+        List<ParadaDTO> paradas = (conBusqueda
+                ? paradaRepositorio.findByNombreContainingIgnoreCaseAndLatBetweenAndLonBetweenOrderByNombreAsc(
+                textoBuscar,
+                minLat,
+                maxLat,
+                minLon,
+                maxLon,
+                PageRequest.of(0, limiteFinal)
+        )
+                : paradaRepositorio.findByLatBetweenAndLonBetweenOrderByNombreAsc(
+                minLat,
+                maxLat,
+                minLon,
+                maxLon,
+                PageRequest.of(0, limiteFinal)
+        )).stream()
+                .map(this::convertirADTO)
+                .toList();
+
+        return new ParadasMapaResultadoDTO(
+                Math.toIntExact(totalParadas),
+                paradas.size(),
+                limiteFinal,
+                ZOOM_MINIMO_MAPA,
+                paradas
+        );
+    }
+
     @Transactional
     public int importarParadasDesdeDatosVigo() {
         List<ClienteDatosVigo.ParadaDatosVigo> paradasDatosVigo = clienteDatosVigo.obtenerParadas();
@@ -114,7 +192,6 @@ public class ParadaServicio {
         return paradas.size();
     }
 
-    // Convierte una parada del JSON oficial en una entidad Parada
     private Parada convertirDesdeDatosVigo(
             ClienteDatosVigo.ParadaDatosVigo paradaDatosVigo,
             OffsetDateTime ahora
@@ -139,8 +216,6 @@ public class ParadaServicio {
         return parada;
     }
 
-    // Separa el texto de líneas.
-    // Ejemplo: "C3d, A, 4A" -> ["C3d", "A", "4A"]
     private List<String> separarLineas(String lineasOriginal) {
         if (lineasOriginal == null || lineasOriginal.trim().isEmpty()) {
             return List.of();
@@ -154,7 +229,6 @@ public class ParadaServicio {
                 .toList();
     }
 
-    // Convierte una entidad Parada en ParadaDTO
     private ParadaDTO convertirADTO(Parada parada) {
         return new ParadaDTO(
                 parada.getId(),
@@ -166,7 +240,6 @@ public class ParadaServicio {
         );
     }
 
-    // Convierte una parada en ParadaCercanaDTO añadiendo la distancia
     private ParadaCercanaDTO convertirAParadaCercanaDTO(
             Parada parada,
             Double latUsuario,
@@ -188,5 +261,13 @@ public class ParadaServicio {
                 parada.getLineasOriginal(),
                 distanciaMetros
         );
+    }
+
+    private int limitarNumero(Integer valor, int minimo, int maximo, int valorPorDefecto) {
+        if (valor == null) {
+            return valorPorDefecto;
+        }
+
+        return Math.max(minimo, Math.min(maximo, valor));
     }
 }

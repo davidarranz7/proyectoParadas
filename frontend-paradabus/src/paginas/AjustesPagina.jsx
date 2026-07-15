@@ -48,11 +48,8 @@ function AjustesPagina() {
       <header className="cabecera-panel-app">
         <div>
           <p className="pagina-inicio__mini">Ajustes</p>
-          <h1>Una pantalla de preferencias mas cuidada y util para una app de bus.</h1>
-          <p>
-            Tambien he rehecho esta seccion para que deje de parecer un placeholder
-            y encaje con el resto del producto en movil, tablet y escritorio.
-          </p>
+          <h1>Avisos, ubicacion y ruta</h1>
+          <p>Activa lo que quieras usar en cada trayecto.</p>
         </div>
 
         <div className="cabecera-panel-app__chips">
@@ -71,19 +68,18 @@ function AjustesPagina() {
 
             <div>
               <p className="pagina-inicio__mini">Experiencia</p>
-              <h2>Preferencias listas para una experiencia de viaje mas personal.</h2>
+              <h2>Tu forma de moverte</h2>
             </div>
           </div>
 
           <p className="tarjeta-panel-app__texto">
-            Esta parte esta pensada para decisiones rapidas: avisos, uso de ubicacion,
-            tipo de ruta preferida y control de la experiencia del viajero.
+            Avisos, GPS y prioridad de ruta en una sola vista.
           </p>
 
           <div className="tarjeta-panel-app__pildoras">
             <span>Rapida</span>
-            <span>Clara</span>
-            <span>Orientada a movilidad</span>
+            <span>Simple</span>
+            <span>Movilidad</span>
           </div>
         </article>
 
@@ -132,8 +128,7 @@ function AjustesPagina() {
 
           <h3>Privacidad y confianza</h3>
           <p>
-            He dejado tambien un bloque visual para permisos, uso de datos y mensajes
-            de confianza, algo bastante tipico en apps de movilidad.
+            Revisa permisos de ubicacion y avisos.
           </p>
         </article>
       </div>

@@ -1,3 +1,13 @@
+@media (min-width: 540px) {
+  .buscador-ruta-app__metricas {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .buscador-ruta-app__guardados {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (min-width: 640px) {
   .buscador-ruta-app__acciones {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -9,6 +19,12 @@
 
   .tarjeta-ruta__datos-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1099px) {
+  .rutas-app-shell__ayuda {
+    display: none;
   }
 }
 

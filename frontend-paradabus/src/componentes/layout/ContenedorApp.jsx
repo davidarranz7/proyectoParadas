@@ -73,16 +73,14 @@ function ContenedorApp({ children, paginaActiva, onCambiarPagina }) {
         </div>
 
         <section className="panel-lateral__hero">
-          <p className="panel-lateral__hero-etiqueta">Modo viaje</p>
-          <strong>Una interfaz mas parecida a una app de transporte real.</strong>
-          <span>
-            Busqueda rapida, panel de seguimiento y tiempos en vivo en el mismo flujo.
-          </span>
+          <p className="panel-lateral__hero-etiqueta">Vigo</p>
+          <strong>Rutas, mapa y lineas.</strong>
+          <span>Todo en una sola app.</span>
 
           <div className="panel-lateral__hero-pildoras">
-            <span>Movil primero</span>
+            <span>Directa</span>
             <span>Tiempo real</span>
-            <span>Tablet y desktop</span>
+            <span>Avisos</span>
           </div>
         </section>
 
@@ -121,8 +119,8 @@ function ContenedorApp({ children, paginaActiva, onCambiarPagina }) {
           </div>
 
           <div>
-            <p>InfoBus activo</p>
-            <span>Panel listo para tiempos en tiempo real</span>
+            <p>Servicio</p>
+            <span>Proximos buses y horarios</span>
           </div>
         </div>
 
@@ -132,8 +130,8 @@ function ContenedorApp({ children, paginaActiva, onCambiarPagina }) {
           </div>
 
           <div>
-            <p>Ruta en 3 pasos</p>
-            <span>Busca, compara y sigue el trayecto sin salir de pantalla.</span>
+            <p>Trayecto</p>
+            <span>Seguimiento y aviso al bajar</span>
           </div>
         </div>
       </aside>

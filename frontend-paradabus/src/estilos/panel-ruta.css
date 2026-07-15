@@ -67,14 +67,18 @@
 }
 
 .panel-ruta-app__dato,
-.panel-ruta-app__resumen .tiempo-real {
+.panel-ruta-app__resumen .indicador-tiempo {
   min-height: 74px;
   padding: 12px;
   display: grid;
   align-content: center;
-  background: rgba(255, 248, 244, 0.9);
-  border: 1px solid rgba(255, 107, 61, 0.1);
+  background: rgba(235, 243, 250, 0.92);
+  border: 1px solid rgba(31, 106, 165, 0.08);
   border-radius: 18px;
+}
+
+.panel-ruta-app__resumen .indicador-tiempo {
+  justify-items: start;
 }
 
 .panel-ruta-app__dato strong {
@@ -124,6 +128,10 @@
   font-size: 0.78rem;
   line-height: 1.45;
   font-weight: 700;
+}
+
+.panel-ruta-app__estado-live .indicador-tiempo {
+  margin-top: 12px;
 }
 
 .panel-ruta-app__acciones {
@@ -230,8 +238,8 @@
   display: grid;
   place-items: center;
   color: var(--color-texto-suave);
-  background: rgba(255, 248, 244, 0.88);
-  border: 1px solid rgba(255, 107, 61, 0.1);
+  background: rgba(235, 243, 250, 0.88);
+  border: 1px solid rgba(31, 106, 165, 0.08);
   border-radius: 16px;
   z-index: 1;
 }

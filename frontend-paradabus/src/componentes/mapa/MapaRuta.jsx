@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
+import { resolverEstadoTiempoReal } from '../comunes/IndicadorTiempoReal';
 import { obtenerRecorridoMapaLinea } from '../../servicios/lineasServicio';
 import { obtenerParadasTrip } from '../../servicios/paradasTripServicio';
+import MarcadorBusAnimado from './MarcadorBusAnimado';
 
 function crearIconoMapa(tipo) {
   return L.divIcon({
@@ -310,6 +312,59 @@ function obtenerTramoMapa(ruta, segmentoSeguimiento) {
   };
 }
 
+function obtenerMinutosVisuales(ruta) {
+  const posiblesValores = [
+    ruta?.minutosInfoBus,
+    ruta?.minutosTiempoReal,
+    ruta?.minutosEsperaReal,
+    ruta?.minutosEspera,
+    ruta?.siguientesSalidas?.[0]?.minutos,
+    ruta?.siguientesSalidas?.[0]?.minutosHastaSalida
+  ];
+
+  const valor = posiblesValores.find((item) => item !== undefined && item !== null);
+  const numero = Number(valor);
+
+  return Number.isFinite(numero) ? numero : null;
+}
+
+function calcularProgresoVisualBus({
+  minutosVisuales,
+  paradasTrip,
+  segmentoSeguimiento,
+  trayectoActivo
+}) {
+  const totalParadasSegmento = segmentoSeguimiento?.paradas?.length || 0;
+
+  if (totalParadasSegmento > 1) {
+    return Math.min(
+      1,
+      Math.max(0, (segmentoSeguimiento?.progresoIndice || 0) / (totalParadasSegmento - 1))
+    );
+  }
+
+  if (paradasTrip.length > 1 && trayectoActivo?.estadoActual?.paradasRestantes !== undefined) {
+    const totalSaltos = paradasTrip.length - 1;
+    const completadas = Math.max(0, totalSaltos - trayectoActivo.estadoActual.paradasRestantes);
+
+    return Math.min(1, completadas / totalSaltos);
+  }
+
+  if (minutosVisuales === null) {
+    return 0.34;
+  }
+
+  if (minutosVisuales <= 3) {
+    return 0.84;
+  }
+
+  if (minutosVisuales <= 5) {
+    return 0.68;
+  }
+
+  return 0.38;
+}
+
 function MapaRuta({
   ruta,
   origen,
@@ -384,8 +439,7 @@ function MapaRuta({
         }
 
         setPuntosBusCompletos(puntos);
-      } catch (error) {
-        console.error('Error cargando recorrido real del bus:', error);
+      } catch {
         setErrorRecorrido('No se pudo cargar el recorrido real del bus.');
       } finally {
         setCargandoRecorrido(false);
@@ -420,8 +474,7 @@ function MapaRuta({
           .filter(Boolean);
 
         setParadasTrip(paradasNormalizadas);
-      } catch (error) {
-        console.error('Error cargando paradas del trip:', error);
+      } catch {
         setErrorParadasTrip('No se pudieron cargar las paradas intermedias.');
       } finally {
         setCargandoParadasTrip(false);
@@ -485,14 +538,25 @@ function MapaRuta({
   }, [paradasTrip]);
 
   const centroMapa = puntoOrigenUsuario || paradaOrigen || [42.232045931, -8.708603793];
+  const minutosVisuales = useMemo(() => obtenerMinutosVisuales(ruta), [ruta]);
+  const progresoBusVisual = useMemo(() => {
+    return calcularProgresoVisualBus({
+      minutosVisuales,
+      paradasTrip,
+      segmentoSeguimiento,
+      trayectoActivo
+    });
+  }, [minutosVisuales, paradasTrip, segmentoSeguimiento, trayectoActivo]);
+  const estadoBusVisual = useMemo(() => {
+    return resolverEstadoTiempoReal(
+      minutosVisuales,
+      minutosVisuales === null ? 'ESTIMADO' : 'TIEMPO_REAL'
+    );
+  }, [minutosVisuales]);
 
   const paradaSiguienteTrayecto = trayectoActivo?.estadoActual?.paradaSiguiente
     ? [trayectoActivo.estadoActual.paradaSiguiente.lat, trayectoActivo.estadoActual.paradaSiguiente.lon]
     : null;
-
-  const posicionBusActiva = ubicacionUsuario
-    ? [ubicacionUsuario.lat, ubicacionUsuario.lon]
-    : paradaSiguienteTrayecto;
 
   return (
     <div className="mapa-ruta">
@@ -511,8 +575,14 @@ function MapaRuta({
       {!cargandoRecorrido && !cargandoParadasTrip && puntosBusRecortados.length >= 2 && (
         <div className="mapa-ruta__estado">
           {trayectoActivo?.estadoActual
-            ? `Seguimiento activo · ${trayectoActivo.estadoActual.paradasRestantes} paradas restantes`
-            : `Ruta cargada · baja dentro de ${numeroParadasHastaBajar} paradas`}
+            ? `Seguimiento activo - ${trayectoActivo.estadoActual.paradasRestantes} paradas restantes`
+            : `Ruta cargada - baja dentro de ${numeroParadasHastaBajar} paradas`}
+        </div>
+      )}
+
+      {!cargandoRecorrido && puntosBusRecortados.length >= 2 && (
+        <div className="mapa-ruta__estado mapa-ruta__estado--bus">
+          {estadoBusVisual.valor} - {estadoBusVisual.estado} ({estadoBusVisual.origen})
         </div>
       )}
 
@@ -630,15 +700,12 @@ function MapaRuta({
           </Marker>
         )}
 
-        {posicionBusActiva && (
-          <Marker position={posicionBusActiva} icon={crearIconoMapa('bus')}>
-            <Popup>
-              <div className="popup-parada">
-                <strong>Bus seguido por la app</strong>
-                <span>Visual del trayecto activo sobre la ruta</span>
-              </div>
-            </Popup>
-          </Marker>
+        {puntosBusRecortados.length >= 2 && (
+          <MarcadorBusAnimado
+            puntos={puntosBusRecortados}
+            progreso={progresoBusVisual}
+            tiempoReal={minutosVisuales !== null}
+          />
         )}
 
         {puntoDestinoUsuario && (

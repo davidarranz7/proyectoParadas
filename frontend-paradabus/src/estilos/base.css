@@ -5,38 +5,38 @@
 }
 
 :root {
-  --color-fondo: #f6efe7;
-  --color-fondo-profundo: #1f1a22;
-  --color-fondo-mapa: #eef5f8;
-  --color-panel: rgba(255, 255, 255, 0.92);
+  --color-fondo: #eef3f7;
+  --color-fondo-profundo: #102033;
+  --color-fondo-mapa: #e8f0f5;
+  --color-panel: rgba(255, 255, 255, 0.94);
   --color-panel-fuerte: #ffffff;
-  --color-panel-suave: #fff8f4;
+  --color-panel-suave: #f7fbff;
 
-  --color-texto: #1f1b24;
-  --color-texto-suave: #6f6670;
-  --color-texto-apagado: #93878d;
-  --color-texto-claro: #f8f2ee;
+  --color-texto: #173047;
+  --color-texto-suave: #5e7388;
+  --color-texto-apagado: #8295a8;
+  --color-texto-claro: #f4f8fb;
 
-  --color-borde: rgba(38, 28, 34, 0.1);
-  --color-borde-fuerte: rgba(38, 28, 34, 0.18);
+  --color-borde: rgba(23, 48, 71, 0.1);
+  --color-borde-fuerte: rgba(23, 48, 71, 0.16);
 
-  --color-principal: #ff6b3d;
-  --color-principal-oscuro: #e8542a;
-  --color-principal-suave: #fff0e9;
-  --color-principal-luz: #ffb69e;
+  --color-principal: #1f6aa5;
+  --color-principal-oscuro: #154d79;
+  --color-principal-suave: #e7f1f8;
+  --color-principal-luz: #8dbbdc;
 
-  --color-secundario: #16384d;
-  --color-secundario-suave: #e2eff6;
+  --color-secundario: #0f2c47;
+  --color-secundario-suave: #e4edf5;
   --color-verde: #1fb874;
   --color-verde-suave: #def9ea;
-  --color-naranja: #ff9d2d;
-  --color-naranja-suave: #fff0cf;
+  --color-naranja: #ef9c2b;
+  --color-naranja-suave: #fff3d8;
   --color-rojo: #ef4444;
   --color-rojo-suave: #ffe6e6;
 
-  --sombra-panel: 0 22px 48px rgba(31, 26, 34, 0.12);
-  --sombra-flotante: 0 28px 70px rgba(31, 26, 34, 0.16);
-  --sombra-resalte: 0 18px 40px rgba(255, 107, 61, 0.2);
+  --sombra-panel: 0 18px 42px rgba(16, 32, 51, 0.08);
+  --sombra-flotante: 0 24px 56px rgba(16, 32, 51, 0.12);
+  --sombra-resalte: 0 18px 34px rgba(31, 106, 165, 0.18);
 
   --radio-xl: 32px;
   --radio-lg: 24px;
@@ -67,9 +67,9 @@ body {
   min-width: 320px;
   color: var(--color-texto);
   background:
-    radial-gradient(circle at top left, rgba(255, 107, 61, 0.16), transparent 24%),
-    radial-gradient(circle at top right, rgba(22, 56, 77, 0.12), transparent 18%),
-    linear-gradient(180deg, #fff9f5 0%, #f6efe7 44%, #f2f5f7 100%);
+    radial-gradient(circle at top left, rgba(31, 106, 165, 0.1), transparent 24%),
+    radial-gradient(circle at top right, rgba(15, 44, 71, 0.08), transparent 18%),
+    linear-gradient(180deg, #f8fbfd 0%, #eef3f7 46%, #e7eef4 100%);
   font-family:
     Manrope,
     system-ui,
@@ -94,6 +94,12 @@ button {
   background: none;
   color: inherit;
   cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    opacity 0.18s ease;
 }
 
 button:disabled {
@@ -138,7 +144,7 @@ p {
 
 :focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(255, 107, 61, 0.18);
+  box-shadow: 0 0 0 4px rgba(31, 106, 165, 0.18);
 }
 
 .texto-mono {
@@ -240,6 +246,13 @@ p {
   border-radius: 16px;
   font-size: 0.84rem;
   font-weight: 700;
+}
+
+.cabecera-con-ayuda {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .leaflet-control-attribution {

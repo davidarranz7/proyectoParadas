@@ -18,9 +18,9 @@
 
 .pagina-mapa__headline h1 {
   margin-top: 8px;
-  max-width: 16ch;
-  font-size: clamp(2rem, 6vw, 3.2rem);
-  line-height: 0.96;
+  max-width: 14ch;
+  font-size: clamp(2rem, 6vw, 3.15rem);
+  line-height: 0.97;
 }
 
 .pagina-mapa__headline p:last-child {
@@ -59,6 +59,7 @@
 
 .pagina-mapa__resumen {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -74,6 +75,10 @@
   border-radius: 22px;
   box-shadow: var(--sombra-panel);
   backdrop-filter: blur(16px);
+}
+
+.pagina-mapa__dato:last-child {
+  grid-column: 1 / -1;
 }
 
 .pagina-mapa__dato-icono {
@@ -103,7 +108,7 @@
 
 .mapa-general {
   position: relative;
-  min-height: 580px;
+  min-height: clamp(560px, 72vh, 780px);
   overflow: hidden;
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.72);
@@ -114,29 +119,196 @@
 .mapa-general__leaflet {
   width: 100%;
   height: 100%;
-  min-height: 580px;
+  min-height: inherit;
   z-index: 1;
 }
 
-.mapa-general__estado,
-.mapa-general__contador {
+.mapa-general__buscador {
   position: absolute;
-  top: 14px;
-  left: 50%;
-  z-index: 700;
-  transform: translateX(-50%);
-  min-height: 36px;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 850;
+  display: grid;
+  gap: 8px;
+}
+
+.mapa-general__campo {
+  min-height: 52px;
   padding: 0 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(22, 56, 77, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 16px 34px rgba(31, 26, 34, 0.12);
+  backdrop-filter: blur(18px);
+}
+
+.mapa-general__campo svg {
+  color: var(--color-texto-apagado);
+}
+
+.mapa-general__campo input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  color: var(--color-texto);
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.mapa-general__limpiar {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: var(--color-texto-suave);
+  background: rgba(22, 56, 77, 0.06);
+  border-radius: 999px;
+}
+
+.mapa-general__resultados {
+  overflow: hidden;
+  display: grid;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(22, 56, 77, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(31, 26, 34, 0.16);
+  backdrop-filter: blur(18px);
+}
+
+.mapa-general__estado-busqueda {
+  padding: 14px 16px;
+  color: var(--color-texto-suave);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.mapa-general__resultado {
+  width: 100%;
+  padding: 13px 16px;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  border-bottom: 1px solid rgba(22, 56, 77, 0.06);
+}
+
+.mapa-general__resultado:last-child {
+  border-bottom: 0;
+}
+
+.mapa-general__resultado strong {
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.mapa-general__resultado span {
+  color: var(--color-texto-suave);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.mapa-general__estado,
+.mapa-general__contador,
+.mapa-general__overlay-zoom {
+  position: absolute;
+  left: 50%;
+  z-index: 760;
+  transform: translateX(-50%);
+  max-width: calc(100% - 28px);
+  min-height: 38px;
+  padding: 10px 14px;
   display: inline-flex;
   align-items: center;
-  color: var(--color-secundario);
+  justify-content: center;
+  text-align: center;
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(22, 56, 77, 0.08);
   border-radius: var(--radio-pill);
   box-shadow: 0 12px 24px rgba(31, 26, 34, 0.12);
   font-size: 0.76rem;
   font-weight: 800;
+}
+
+.mapa-general__estado,
+.mapa-general__contador {
+  top: 76px;
+  color: var(--color-secundario);
   white-space: nowrap;
+}
+
+.mapa-general__overlay-zoom {
+  top: 50%;
+  width: min(360px, calc(100% - 28px));
+  color: var(--color-texto);
+  white-space: normal;
+}
+
+.mapa-general__cercanas {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 770;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 22px;
+  box-shadow: 0 24px 48px rgba(31, 26, 34, 0.18);
+  backdrop-filter: blur(18px);
+}
+
+.mapa-general__cercanas-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mapa-general__cercanas-cabecera strong {
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.mapa-general__cercanas-cabecera span {
+  color: var(--color-texto-suave);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.mapa-general__cercanas-lista {
+  display: grid;
+  gap: 8px;
+}
+
+.mapa-general__cercana {
+  width: 100%;
+  padding: 11px 12px;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  background: rgba(235, 243, 250, 0.9);
+  border: 1px solid rgba(31, 106, 165, 0.08);
+  border-radius: 16px;
+}
+
+.mapa-general__cercana strong {
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.mapa-general__cercana span {
+  color: var(--color-texto-suave);
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .marcador-mapa-general {
@@ -189,8 +361,8 @@
   left: 12px;
   right: 12px;
   bottom: 12px;
-  z-index: 800;
-  max-height: 62%;
+  z-index: 820;
+  max-height: 70%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -318,8 +490,8 @@
   gap: 10px;
   align-items: center;
   padding: 12px;
-  background: rgba(255, 248, 244, 0.84);
-  border: 1px solid rgba(255, 107, 61, 0.08);
+  background: rgba(235, 243, 250, 0.92);
+  border: 1px solid rgba(31, 106, 165, 0.08);
   border-radius: 18px;
 }
 
@@ -390,6 +562,20 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .pagina-mapa__dato:last-child {
+    grid-column: auto;
+  }
+
+  .mapa-general__buscador {
+    width: min(360px, calc(100% - 24px));
+    right: auto;
+  }
+
+  .mapa-general__cercanas {
+    width: min(340px, calc(100% - 24px));
+    right: auto;
+  }
+
   .panel-infobus__item {
     grid-template-columns: 46px minmax(0, 1fr) auto;
   }
@@ -408,6 +594,11 @@
 
   .pagina-mapa__acciones-superiores {
     justify-items: end;
+  }
+
+  .mapa-general__estado,
+  .mapa-general__contador {
+    top: 18px;
   }
 
   .panel-infobus {

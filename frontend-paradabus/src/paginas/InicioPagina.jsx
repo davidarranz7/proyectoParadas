@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   ArrowUpDown,
@@ -17,9 +17,18 @@ import {
   X
 } from 'lucide-react';
 
+import BottomSheet from '../componentes/comunes/BottomSheet';
+import BotonAyuda from '../componentes/comunes/BotonAyuda';
+import BandaAvisosServicio from '../componentes/comunes/BandaAvisosServicio';
+import EstadoVacio from '../componentes/comunes/EstadoVacio';
+import IndicadorTiempoReal from '../componentes/comunes/IndicadorTiempoReal';
+import MensajeError from '../componentes/comunes/MensajeError';
+import OverlayCarga from '../componentes/comunes/OverlayCarga';
+import SkeletonTarjeta from '../componentes/comunes/SkeletonTarjeta';
 import SelectorLugar from '../componentes/comunes/SelectorLugar';
 import MapaLugarModal from '../componentes/comunes/MapaLugarModal';
 import MapaRuta from '../componentes/mapa/MapaRuta';
+import TimelineViaje from '../componentes/rutas/TimelineViaje';
 import {
   buscarRutas
 } from '../servicios/rutasServicio';
@@ -230,7 +239,7 @@ function crearPasosRuta(ruta, destino) {
       id: 'bus-1',
       icono: BusFront,
       titulo: `Coge la linea ${primerTramo?.linea || ruta?.linea}`,
-      descripcion: `Sale a las ${obtenerTextoHora(primerTramo?.horaSalidaBus || ruta?.horaSalidaBus)} · ${primerTramo?.minutosBus ?? '--'} min`,
+      descripcion: `Sale a las ${obtenerTextoHora(primerTramo?.horaSalidaBus || ruta?.horaSalidaBus)} - ${primerTramo?.minutosBus ?? '--'} min`,
       activo: true
     });
 
@@ -254,7 +263,7 @@ function crearPasosRuta(ruta, destino) {
       id: 'bus',
       icono: BusFront,
       titulo: `Coge la linea ${obtenerLineaRuta(ruta)}`,
-      descripcion: `Sale a las ${obtenerTextoHora(ruta?.horaSalidaBus)} · ${ruta?.minutosBus ?? '--'} min en bus`,
+      descripcion: `Sale a las ${obtenerTextoHora(ruta?.horaSalidaBus)} - ${ruta?.minutosBus ?? '--'} min en bus`,
       activo: true
     });
   }
@@ -281,7 +290,6 @@ function crearPasosRuta(ruta, destino) {
 
 function TarjetaRuta({ ruta, activa, indice, onSeleccionar }) {
   const minutosInfoBus = obtenerMinutosInfoBus(ruta);
-  const claseMinutos = obtenerClaseMinutos(minutosInfoBus);
   const linea = obtenerLineaRuta(ruta);
   const tipoRuta = obtenerTipoRuta(ruta);
   const lineasSecundarias = obtenerLineasSecundarias(ruta);
@@ -331,16 +339,17 @@ function TarjetaRuta({ ruta, activa, indice, onSeleccionar }) {
           </div>
         </div>
 
-        <div className={`tiempo-real ${claseMinutos}`}>
-          <span>{minutosInfoBus ?? '--'}</span>
-          <small>min</small>
-        </div>
+        <IndicadorTiempoReal
+          compacto
+          fuente={minutosInfoBus === null ? 'ESTIMADO' : 'TIEMPO_REAL'}
+          minutos={minutosInfoBus}
+        />
       </div>
 
       <div className="tarjeta-ruta__tiempo-principal">
         <BusFront size={20} />
         <strong>{ruta?.minutosTotal ?? '--'}</strong>
-        <span>min de viaje total</span>
+        <span>min total</span>
       </div>
 
       <div className="tarjeta-ruta__linea">
@@ -380,16 +389,11 @@ function TarjetaRuta({ ruta, activa, indice, onSeleccionar }) {
 
 function EstadoVacioRutas() {
   return (
-    <div className="estado-rutas-vacio">
-      <div className="estado-rutas-vacio__icono">
-        <Search size={22} />
-      </div>
-
-      <h3>Busca tu ruta</h3>
-      <p>
-        Elige origen y destino para ver las mejores opciones en bus por Vigo.
-      </p>
-    </div>
+    <EstadoVacio
+      icono={Search}
+      titulo="Busca tu ruta"
+      descripcion="Marca origen y destino para ver buses y tiempos."
+    />
   );
 }
 
@@ -407,6 +411,11 @@ function PanelTrayectoActivo({
 
   const segmentoActivo = obtenerSegmentoActivo(trayectoActivo);
   const estado = trayectoActivo.estadoActual;
+  const resumenBajada = estado?.paradasRestantes > 1
+    ? `Baja en ${estado.paradasRestantes} paradas`
+    : estado?.paradasRestantes === 1
+      ? 'Baja en la siguiente'
+      : 'Baja ahora';
 
   return (
     <section className="trayecto-activo">
@@ -415,13 +424,13 @@ function PanelTrayectoActivo({
           <p className="pagina-inicio__mini">Trayecto activo</p>
           <h2>
             {trayectoActivo.finalizado
-              ? 'Llegada detectada'
-              : `Linea ${segmentoActivo?.linea || 'BUS'} en seguimiento`}
+              ? 'Trayecto listo'
+              : `Linea ${segmentoActivo?.linea || 'BUS'} en marcha`}
           </h2>
           <p className="trayecto-activo__texto">
             {trayectoActivo.finalizado
-              ? `Ya puedes finalizar el trayecto hacia ${trayectoActivo.destinoFinal}.`
-              : `Te avisaremos antes de bajar y puedes seguir la ruta en el mapa.`}
+              ? `Ya puedes cerrar el trayecto a ${trayectoActivo.destinoFinal}.`
+              : 'Te avisaremos antes de bajar.'}
           </p>
         </div>
 
@@ -456,7 +465,7 @@ function PanelTrayectoActivo({
               ? (trayectoActivo.segmentoActivoIndex < (trayectoActivo.segmentos.length - 1)
                 ? 'Siguiente parada: preparate para el transbordo'
                 : 'Siguiente parada: baja')
-              : 'Seguimiento activo del viaje'}
+              : 'Viaje en seguimiento'}
           </strong>
           <span>
             {estado?.distanciaSiguienteParada
@@ -464,6 +473,11 @@ function PanelTrayectoActivo({
               : 'La app ira actualizando el siguiente punto del trayecto.'}
           </span>
         </div>
+      </div>
+
+      <div className="trayecto-activo__resumen-bajada">
+        <strong>{resumenBajada}</strong>
+        <span>{estado?.paradaSiguiente?.nombre || 'Ruta en seguimiento'}</span>
       </div>
 
       <div className="trayecto-activo__acciones">
@@ -483,7 +497,7 @@ function PanelTrayectoActivo({
             onClick={onActivarAvisos}
           >
             <Bell size={17} />
-            Activar avisos
+            Avisarme al bajar
           </button>
         )}
 
@@ -524,16 +538,13 @@ function PanelRutaSeleccionada({
         <div className="panel-ruta-app__vacio">
           <MapPinned size={24} />
           <h3>Selecciona una ruta</h3>
-          <p>
-            Al elegir una opcion veras aqui el mapa, el resumen y los pasos del viaje.
-          </p>
+          <p>Mapa, pasos y paradas en una vista.</p>
         </div>
       </aside>
     );
   }
 
   const minutosInfoBus = obtenerMinutosInfoBus(ruta);
-  const claseMinutos = obtenerClaseMinutos(minutosInfoBus);
   const linea = obtenerLineaRuta(ruta);
   const caminata = formatearMetros(ruta?.distanciaAndandoTotalMetros);
   const pasos = crearPasosRuta(ruta, destino);
@@ -554,7 +565,7 @@ function PanelRutaSeleccionada({
               Hasta {obtenerNombreLugar(destino)}
             </h2>
             <span className="panel-ruta-app__subtitulo">
-              {obtenerTipoRuta(ruta)} · salida {obtenerTextoHora(ruta?.horaSalidaBus || ruta?.horaInicioRuta)}
+              {obtenerTipoRuta(ruta)} - salida {obtenerTextoHora(ruta?.horaSalidaBus || ruta?.horaInicioRuta)}
             </span>
           </div>
         </div>
@@ -585,10 +596,10 @@ function PanelRutaSeleccionada({
           <span>Caminata total</span>
         </div>
 
-        <div className={`tiempo-real ${claseMinutos}`}>
-          <span>{minutosInfoBus ?? '--'}</span>
-          <small>live</small>
-        </div>
+        <IndicadorTiempoReal
+          fuente={minutosInfoBus === null ? 'ESTIMADO' : 'TIEMPO_REAL'}
+          minutos={minutosInfoBus}
+        />
       </div>
 
       <div className="panel-ruta-app__estado-live">
@@ -600,12 +611,12 @@ function PanelRutaSeleccionada({
           <strong>
             {trayectoCoincide
               ? 'Trayecto en curso sobre esta ruta'
-              : 'Panel pensado para seguir el viaje en marcha'}
+              : 'Ruta lista para seguir'}
           </strong>
           <span>
             {trayectoCoincide
-              ? 'La ruta seleccionada esta siendo monitorizada con avisos y siguiente parada.'
-              : 'Tienes recorrido, subida, bajada y caminata final en la misma vista.'}
+              ? 'Avisos y siguiente parada activos.'
+              : 'Subida, bajada y pasos del viaje.'}
           </span>
         </div>
       </div>
@@ -649,31 +660,7 @@ function PanelRutaSeleccionada({
         />
       </div>
 
-      <div className="timeline-ruta">
-        {pasos.map((paso) => {
-          const Icono = paso.icono;
-
-          return (
-            <div
-              key={paso.id}
-              className={
-                paso.activo
-                  ? 'timeline-ruta__paso timeline-ruta__paso--activo'
-                  : 'timeline-ruta__paso'
-              }
-            >
-              <div className="timeline-ruta__icono">
-                <Icono size={17} />
-              </div>
-
-              <div>
-                <strong>{paso.titulo}</strong>
-                <span>{paso.descripcion}</span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <TimelineViaje pasos={pasos} />
     </aside>
   );
 }
@@ -693,10 +680,15 @@ function InicioPagina() {
   const [rutaSeleccionada, setRutaSeleccionada] = useState(null);
   const [trayectoActivo, setTrayectoActivo] = useState(null);
   const [cargando, setCargando] = useState(false);
+  const [tipoCarga, setTipoCarga] = useState('');
   const [preparandoTrayecto, setPreparandoTrayecto] = useState(false);
   const [error, setError] = useState('');
+  const [esMovil, setEsMovil] = useState(() => window.innerWidth < 980);
   const [permisoNotificaciones, setPermisoNotificaciones] = useState(obtenerPermisoNotificaciones());
   const [lugaresGuardados, setLugaresGuardados] = useState(() => obtenerLugaresGuardados());
+  const [modoBusqueda, setModoBusqueda] = useState('directas');
+  const [filtroRutas, setFiltroRutas] = useState('todas');
+  const [detalleRutaMovilAbierto, setDetalleRutaMovilAbierto] = useState(false);
   const [selectorMapa, setSelectorMapa] = useState({
     abierto: false,
     tipo: null
@@ -713,6 +705,17 @@ function InicioPagina() {
   );
 
   const rutas = resultadoBusqueda.opciones || [];
+  const rutasFiltradas = useMemo(() => {
+    if (filtroRutas === 'directas') {
+      return resultadoBusqueda.directas || [];
+    }
+
+    if (filtroRutas === 'transbordos') {
+      return resultadoBusqueda.transbordos || [];
+    }
+
+    return rutas;
+  }, [filtroRutas, resultadoBusqueda.directas, resultadoBusqueda.transbordos, rutas]);
 
   const resumenBusqueda = useMemo(() => {
     if (!origenSeleccionado && !destinoSeleccionado) {
@@ -731,6 +734,17 @@ function InicioPagina() {
   }, [origenSeleccionado, destinoSeleccionado]);
 
   const mejorRuta = rutas[0] || null;
+  const lineaAvisos = useMemo(() => {
+    const lineaTrayecto = obtenerSegmentoActivo(trayectoActivo)?.linea;
+
+    if (lineaTrayecto) {
+      return lineaTrayecto;
+    }
+
+    const rutaReferencia = rutaSeleccionada || mejorRuta;
+
+    return rutaReferencia ? obtenerLineaRuta(rutaReferencia) : null;
+  }, [mejorRuta, rutaSeleccionada, trayectoActivo]);
 
   const metricasRapidas = useMemo(() => {
     return [
@@ -755,6 +769,12 @@ function InicioPagina() {
     ];
   }, [mejorRuta, resultadoBusqueda.totalTransbordos, rutas.length]);
 
+  const textoCarga = tipoCarga === 'ubicacion'
+    ? 'Obteniendo ubicacion...'
+    : tipoCarga === 'trayecto'
+      ? 'Preparando trayecto...'
+      : 'Buscando ruta...';
+
   function limpiarRutas() {
     setResultadoBusqueda({
       opciones: [],
@@ -766,6 +786,8 @@ function InicioPagina() {
       mensaje: ''
     });
     setRutaSeleccionada(null);
+    setDetalleRutaMovilAbierto(false);
+    setFiltroRutas('todas');
   }
 
   function manejarSeleccionOrigen(lugar) {
@@ -786,6 +808,7 @@ function InicioPagina() {
       return;
     }
 
+    setTipoCarga('ubicacion');
     setCargando(true);
     setError('');
 
@@ -801,10 +824,12 @@ function InicioPagina() {
 
         setOrigenSeleccionado(lugarActual);
         limpiarRutas();
+        setTipoCarga('');
         setCargando(false);
       },
       () => {
         setError('No se pudo obtener tu ubicacion. Revisa los permisos del navegador.');
+        setTipoCarga('');
         setCargando(false);
       },
       {
@@ -866,6 +891,9 @@ function InicioPagina() {
     }
 
     try {
+      const forzarTransbordos = opcionesBusqueda.forzarTransbordos ?? (modoBusqueda === 'transbordos');
+
+      setTipoCarga('ruta');
       setCargando(true);
       setError('');
 
@@ -877,9 +905,13 @@ function InicioPagina() {
         fecha: obtenerFechaActual(),
         hora: obtenerHoraActual(),
         maxResultados: 6
-      }, opcionesBusqueda);
+      }, {
+        ...opcionesBusqueda,
+        forzarTransbordos
+      });
 
       setResultadoBusqueda(respuesta);
+      setFiltroRutas(forzarTransbordos ? 'transbordos' : 'todas');
       setRutaSeleccionada((actual) => {
         if (actual) {
           const encontrada = (respuesta.opciones || []).find((ruta) => ruta.idVisual === actual.idVisual);
@@ -888,6 +920,7 @@ function InicioPagina() {
 
         return respuesta.opciones?.[0] || null;
       });
+      setDetalleRutaMovilAbierto(false);
 
       if ((respuesta.opciones || []).length === 0) {
         setError('No encontre rutas utiles para ese trayecto.');
@@ -896,6 +929,7 @@ function InicioPagina() {
       setError(errorPeticion.message || 'No se pudieron buscar rutas.');
       limpiarRutas();
     } finally {
+      setTipoCarga('');
       setCargando(false);
     }
   }
@@ -948,6 +982,7 @@ function InicioPagina() {
 
   async function iniciarTrayecto(ruta) {
     try {
+      setTipoCarga('trayecto');
       setPreparandoTrayecto(true);
       setError('');
 
@@ -983,6 +1018,7 @@ function InicioPagina() {
     } catch (errorTrayecto) {
       setError(errorTrayecto.message || 'No se pudo iniciar el trayecto.');
     } finally {
+      setTipoCarga('');
       setPreparandoTrayecto(false);
     }
   }
@@ -1008,11 +1044,37 @@ function InicioPagina() {
   }
 
   function abrirRutaDesdeTrayecto() {
+    const rutaTrayecto = rutas.find((ruta) => ruta.idVisual === trayectoActivo?.rutaVisualId)
+      || rutaSeleccionada
+      || rutas[0]
+      || null;
+
+    if (rutaTrayecto) {
+      setRutaSeleccionada(rutaTrayecto);
+    }
+
+    if (esMovil && rutaTrayecto) {
+      setDetalleRutaMovilAbierto(true);
+      return;
+    }
+
     panelTrayectoRef.current?.scrollIntoView({
       behavior: 'smooth',
       block: 'start'
     });
   }
+
+  useEffect(() => {
+    function manejarResize() {
+      setEsMovil(window.innerWidth < 980);
+    }
+
+    window.addEventListener('resize', manejarResize);
+
+    return () => {
+      window.removeEventListener('resize', manejarResize);
+    };
+  }, []);
 
   useEffect(() => {
     const trayectoGuardado = cargarTrayectoActivoDeLocal();
@@ -1286,32 +1348,66 @@ function InicioPagina() {
 
       <div className="rutas-app-shell">
         <section className="buscador-ruta-app">
+          <OverlayCarga
+            visible={cargando}
+            texto={textoCarga}
+            subtexto="Consultando datos."
+          />
+
           <div className="buscador-ruta-app__cabecera">
             <div>
               <p className="pagina-inicio__mini">
-                ParadaBus · Vigo
+                Vigo
               </p>
 
-              <h1>
-                Mueve toda la planificacion del viaje a una sola pantalla.
-              </h1>
+              <div className="cabecera-con-ayuda">
+                <h1>
+                  Buscar ruta
+                </h1>
+                <BotonAyuda texto="Marca origen y destino para calcular la ruta." />
+              </div>
 
               <p className="buscador-ruta-app__intro">
-                Ahora la busqueda ya deja preparada la parte de transbordos y el
-                modo trayecto activo con aviso antes de bajar.
+                Directa primero. Transbordos cuando quieras.
               </p>
             </div>
 
             <div className="buscador-ruta-app__estado">
               <span />
-              InfoBus
+              Tiempo real
             </div>
           </div>
 
           <div className="buscador-ruta-app__hero-tags">
-            <span className="chip-app chip-app--activo">Tiempo real</span>
-            <span className="chip-app">Trayecto activo</span>
-            <span className="chip-app">Transbordos ligeros</span>
+            <span className="chip-app chip-app--activo">Directa</span>
+            <span className="chip-app">Avisos</span>
+            <span className="chip-app">Trayecto</span>
+          </div>
+
+          <div className="buscador-ruta-app__modos">
+            <button
+              type="button"
+              className={
+                modoBusqueda === 'directas'
+                  ? 'buscador-ruta-app__modo buscador-ruta-app__modo--activo'
+                  : 'buscador-ruta-app__modo'
+              }
+              onClick={() => setModoBusqueda('directas')}
+            >
+              Rapida
+            </button>
+
+            <button
+              type="button"
+              className={
+                modoBusqueda === 'transbordos'
+                  ? 'buscador-ruta-app__modo buscador-ruta-app__modo--activo'
+                  : 'buscador-ruta-app__modo'
+              }
+              onClick={() => setModoBusqueda('transbordos')}
+            >
+              Con transbordos
+            </button>
           </div>
 
           <div className="buscador-ruta-app__campos">
@@ -1324,7 +1420,7 @@ function InicioPagina() {
             <div className="buscador-ruta-app__inputs">
               <SelectorLugar
                 etiqueta="Origen"
-                placeholder="Origen o ubicacion actual"
+                placeholder="Marca origen"
                 valor={origenSeleccionado}
                 tipo="origen"
                 lugaresGuardados={lugaresGuardados}
@@ -1349,7 +1445,7 @@ function InicioPagina() {
 
               <SelectorLugar
                 etiqueta="Destino"
-                placeholder="A donde vas"
+                placeholder="Marca destino"
                 valor={destinoSeleccionado}
                 tipo="destino"
                 lugaresGuardados={lugaresGuardados}
@@ -1395,6 +1491,8 @@ function InicioPagina() {
             </div>
           )}
 
+          <BandaAvisosServicio linea={lineaAvisos} />
+
           <div className="buscador-ruta-app__acciones">
             <button
               type="button"
@@ -1418,7 +1516,7 @@ function InicioPagina() {
                 <Search size={18} />
               )}
 
-              Buscar ruta
+              {modoBusqueda === 'transbordos' ? 'Buscar con transbordos' : 'Buscar ruta'}
             </button>
 
             <button
@@ -1458,11 +1556,7 @@ function InicioPagina() {
             })}
           </div>
 
-          {error && (
-            <div className="buscador-ruta-app__error">
-              {error}
-            </div>
-          )}
+          <MensajeError className="buscador-ruta-app__error-panel">{error}</MensajeError>
         </section>
 
         <div ref={panelTrayectoRef}>
@@ -1483,18 +1577,21 @@ function InicioPagina() {
                 Opciones
               </p>
 
-              <h2>
-                Rutas disponibles
-              </h2>
+              <div className="cabecera-con-ayuda">
+                <h2>
+                  Rutas
+                </h2>
+                <BotonAyuda texto="El tiempo real depende de InfoBus cuando este disponible." />
+              </div>
 
               <p className="resultados-rutas-app__texto">
-                La busqueda normal ahora prioriza velocidad con rutas directas. Los transbordos se cargan solo si los pides.
+                Directas primero. Transbordos solo si los necesitas.
               </p>
             </div>
 
             <div className="resultados-rutas-app__controles">
               <span className="resultados-rutas-app__contador">
-                {rutas.length > 0 ? `${rutas.length} rutas` : 'Sin rutas'}
+                {rutasFiltradas.length > 0 ? `${rutasFiltradas.length} rutas` : 'Sin rutas'}
               </span>
 
               <button
@@ -1508,6 +1605,45 @@ function InicioPagina() {
             </div>
           </div>
 
+          <div className="resultados-rutas-app__filtros">
+            <button
+              type="button"
+              className={
+                filtroRutas === 'todas'
+                  ? 'resultados-rutas-app__filtro resultados-rutas-app__filtro--activo'
+                  : 'resultados-rutas-app__filtro'
+              }
+              onClick={() => setFiltroRutas('todas')}
+            >
+              Mejores
+            </button>
+
+            <button
+              type="button"
+              className={
+                filtroRutas === 'directas'
+                  ? 'resultados-rutas-app__filtro resultados-rutas-app__filtro--activo'
+                  : 'resultados-rutas-app__filtro'
+              }
+              onClick={() => setFiltroRutas('directas')}
+            >
+              Directas
+            </button>
+
+            <button
+              type="button"
+              className={
+                filtroRutas === 'transbordos'
+                  ? 'resultados-rutas-app__filtro resultados-rutas-app__filtro--activo'
+                  : 'resultados-rutas-app__filtro'
+              }
+              onClick={() => setFiltroRutas('transbordos')}
+              disabled={(resultadoBusqueda.transbordos || []).length === 0}
+            >
+              Transbordos
+            </button>
+          </div>
+
           {!resultadoBusqueda.transbordosConsultados && resultadoBusqueda.mensaje && (
             <div className="resultados-rutas-app__aviso">
               <span>
@@ -1517,7 +1653,10 @@ function InicioPagina() {
               <button
                 type="button"
                 className="resultados-rutas-app__boton-transbordo"
-                onClick={() => buscarOpcionesRuta({ forzarTransbordos: true })}
+                onClick={() => {
+                  setModoBusqueda('transbordos');
+                  buscarOpcionesRuta({ forzarTransbordos: true });
+                }}
                 disabled={cargando}
               >
                 Buscar con transbordos
@@ -1526,48 +1665,71 @@ function InicioPagina() {
           )}
 
           {cargando && (
-            <div className="skeleton-rutas">
-              <div />
-              <div />
-              <div />
-            </div>
+            <SkeletonTarjeta cantidad={3} variante="ruta" />
           )}
 
-          {!cargando && rutas.length === 0 && (
+          {!cargando && rutasFiltradas.length === 0 && (
             <EstadoVacioRutas />
           )}
 
-          {!cargando && rutas.length > 0 && (
+          {!cargando && rutasFiltradas.length > 0 && (
             <div className="resultados-rutas-app__lista">
-              {rutas.map((ruta, indice) => (
+              {rutasFiltradas.map((ruta, indice) => (
                 <TarjetaRuta
                   key={ruta.idVisual || `${ruta?.tripId || ruta?.routeId || 'ruta'}-${indice}`}
                   ruta={ruta}
                   indice={indice}
                   activa={ruta.idVisual === rutaSeleccionada?.idVisual}
-                  onSeleccionar={() => setRutaSeleccionada(ruta)}
+                  onSeleccionar={() => {
+                    setRutaSeleccionada(ruta);
+
+                    if (esMovil) {
+                      setDetalleRutaMovilAbierto(true);
+                    }
+                  }}
                 />
               ))}
             </div>
           )}
         </section>
 
-        <PanelRutaSeleccionada
-          ruta={rutaSeleccionada}
-          origen={origenSeleccionado}
-          destino={destinoSeleccionado}
-          onCerrar={() => setRutaSeleccionada(null)}
-          onIniciarTrayecto={iniciarTrayecto}
-          onFinalizarTrayecto={finalizarTrayecto}
-          trayectoActivo={trayectoActivo}
-          preparandoTrayecto={preparandoTrayecto}
-        />
+        {!esMovil && (
+          <PanelRutaSeleccionada
+            ruta={rutaSeleccionada}
+            origen={origenSeleccionado}
+            destino={destinoSeleccionado}
+            onCerrar={() => setRutaSeleccionada(null)}
+            onIniciarTrayecto={iniciarTrayecto}
+            onFinalizarTrayecto={finalizarTrayecto}
+            trayectoActivo={trayectoActivo}
+            preparandoTrayecto={preparandoTrayecto}
+          />
+        )}
 
         <div className="rutas-app-shell__ayuda">
           <Sparkles size={16} />
-          La interfaz ya tiene base para directas, transbordos, trayecto activo, aviso antes de bajar y notificaciones sobre HTTPS.
+          Pulsa una ruta para ver mapa, pasos y avisos.
         </div>
       </div>
+
+      <BottomSheet
+        abierto={esMovil && detalleRutaMovilAbierto && Boolean(rutaSeleccionada)}
+        onCerrar={() => setDetalleRutaMovilAbierto(false)}
+        titulo={rutaSeleccionada ? `Linea ${obtenerLineaRuta(rutaSeleccionada)}` : 'Ruta'}
+      >
+        {rutaSeleccionada && (
+          <PanelRutaSeleccionada
+            ruta={rutaSeleccionada}
+            origen={origenSeleccionado}
+            destino={destinoSeleccionado}
+            onCerrar={() => setDetalleRutaMovilAbierto(false)}
+            onIniciarTrayecto={iniciarTrayecto}
+            onFinalizarTrayecto={finalizarTrayecto}
+            trayectoActivo={trayectoActivo}
+            preparandoTrayecto={preparandoTrayecto}
+          />
+        )}
+      </BottomSheet>
 
       {selectorMapa.abierto && (
         <MapaLugarModal
@@ -1586,3 +1748,5 @@ function InicioPagina() {
 }
 
 export default InicioPagina;
+
+

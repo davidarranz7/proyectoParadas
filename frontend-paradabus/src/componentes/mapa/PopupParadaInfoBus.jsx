@@ -26,7 +26,7 @@ function obtenerTextoLinea(item) {
     item.nombreLinea ||
     item.routeShortName ||
     item.route_short_name ||
-    'Línea'
+    'Linea'
   );
 }
 
@@ -81,17 +81,8 @@ function PopupParadaInfoBus({ parada, zona }) {
       setCargando(true);
 
       const respuesta = await obtenerInfoBusParada(parada.id);
-
-      console.log('Respuesta InfoBus parada:', parada.id, respuesta);
-
-      const lista = obtenerListaInfoBus(respuesta);
-
-      console.log('Lista InfoBus extraída:', lista);
-
-      setInfoBus(lista);
+      setInfoBus(obtenerListaInfoBus(respuesta));
     } catch (errorBackend) {
-      console.error('Error cargando InfoBus:', errorBackend);
-
       setError(
         errorBackend.message ||
         'No se pudo cargar InfoBus de esta parada.'
@@ -143,7 +134,7 @@ function PopupParadaInfoBus({ parada, zona }) {
 
       {infoBus && infoBus.length === 0 && (
         <p className="popup-parada__vacio">
-          No hay próximos buses disponibles ahora.
+          No hay proximos buses disponibles ahora.
         </p>
       )}
 
@@ -160,7 +151,7 @@ function PopupParadaInfoBus({ parada, zona }) {
 
               <div>
                 <strong>
-                  {obtenerTextoDestino(item) || 'Próximo bus'}
+                  {obtenerTextoDestino(item) || 'Proximo bus'}
                 </strong>
 
                 <small>

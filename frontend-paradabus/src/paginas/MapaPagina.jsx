@@ -1,24 +1,36 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BusFront,
   Clock,
+  Crosshair,
   LocateFixed,
   MapPin,
-  MapPinned,
-  Navigation,
+  Search,
   X
 } from 'lucide-react';
 import {
   MapContainer,
   Marker,
-  Popup,
   TileLayer,
-  useMap
+  useMap,
+  useMapEvents
 } from 'react-leaflet';
 import L from 'leaflet';
 
-import { obtenerInfoBusParada } from '../servicios/infobusServicio';
-import { obtenerTodasLasParadas } from '../servicios/paradasServicio';
+import BotonAyuda from '../componentes/comunes/BotonAyuda';
+import BandaAvisosServicio from '../componentes/comunes/BandaAvisosServicio';
+import MensajeError from '../componentes/comunes/MensajeError';
+import OverlayCarga from '../componentes/comunes/OverlayCarga';
+import PanelInfoBus from '../componentes/mapa/PanelInfoBus';
+import {
+  buscarParadasPorNombre,
+  obtenerParadasCercanas,
+  obtenerParadasParaMapa,
+  obtenerProximosParada
+} from '../servicios/paradasServicio';
+
+const CENTRO_VIGO = [42.232045931, -8.708603793];
+const ZOOM_MINIMO_PARADAS = 14;
 
 function crearIconoParadaMapa() {
   return L.divIcon({
@@ -47,53 +59,27 @@ function crearIconoUsuario() {
   });
 }
 
-function convertirNumero(valor) {
-  const numero = Number(valor);
-
-  return Number.isFinite(numero) ? numero : null;
-}
+const ICONO_PARADA = crearIconoParadaMapa();
+const ICONO_PARADA_SELECCIONADA = crearIconoParadaSeleccionada();
+const ICONO_USUARIO = crearIconoUsuario();
 
 function normalizarParada(parada) {
-  const lat = convertirNumero(
-    parada.lat ??
-    parada.latitud ??
-    parada.latitude
-  );
+  const lat = Number(parada?.lat);
+  const lon = Number(parada?.lon);
 
-  const lon = convertirNumero(
-    parada.lon ??
-    parada.lng ??
-    parada.longitud ??
-    parada.longitude
-  );
-
-  if (lat === null || lon === null) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
     return null;
   }
 
   return {
-    id: parada.id ?? parada.paradaId ?? parada.codigo ?? parada.codigoParada,
-    stopId: parada.stopId ?? parada.stop_id ?? parada.gtfsStopId,
-    nombre: parada.nombre ?? parada.name ?? parada.denominacion ?? 'Parada sin nombre',
+    id: parada.id ?? parada.paradaId,
+    stopId: parada.stopId ?? parada.stop_id,
+    nombre: parada.nombre || 'Parada',
     lat,
-    lon
+    lon,
+    lineasOriginal: parada.lineasOriginal || '',
+    distanciaMetros: parada.distanciaMetros ?? null
   };
-}
-
-function obtenerListaInfoBus(respuesta) {
-  if (Array.isArray(respuesta)) {
-    return respuesta;
-  }
-
-  return (
-    respuesta?.proximosBuses ||
-    respuesta?.proximosBus ||
-    respuesta?.proximos ||
-    respuesta?.buses ||
-    respuesta?.resultados ||
-    respuesta?.llegadas ||
-    []
-  );
 }
 
 function obtenerTextoLinea(item) {
@@ -121,13 +107,12 @@ function obtenerTextoRuta(item) {
 }
 
 function obtenerMinutos(item) {
-  const minutos =
+  const numero = Number(
     item.minutos ??
     item.minutosLlegada ??
     item.tiempoMinutos ??
-    item.tiempoEsperaMinutos;
-
-  const numero = Number(minutos);
+    item.tiempoEsperaMinutos
+  );
 
   return Number.isFinite(numero) ? numero : null;
 }
@@ -139,13 +124,7 @@ function obtenerTextoTiempo(item) {
     return `${minutos} min`;
   }
 
-  return (
-    item.tiempo ||
-    item.horaLlegada ||
-    item.hora ||
-    item.prevision ||
-    'Sin tiempo'
-  );
+  return item.tiempo || item.horaLlegada || item.hora || item.prevision || 'Sin tiempo';
 }
 
 function obtenerClaseMinutos(item) {
@@ -166,89 +145,122 @@ function obtenerClaseMinutos(item) {
   return 'panel-infobus__minutos panel-infobus__minutos--verde';
 }
 
-function AjustarCentro({ centro, zoom }) {
+function calcularLimitePorZoom(zoom) {
+  if (zoom >= 17) {
+    return 240;
+  }
+
+  if (zoom >= 16) {
+    return 180;
+  }
+
+  if (zoom >= 15) {
+    return 120;
+  }
+
+  return 80;
+}
+
+function GestorMapa({
+  objetivoMapa,
+  onCambiarViewport
+}) {
   const map = useMap();
 
+  function emitirViewport() {
+    const bounds = map.getBounds();
+
+    onCambiarViewport({
+      zoom: map.getZoom(),
+      minLat: bounds.getSouth(),
+      maxLat: bounds.getNorth(),
+      minLon: bounds.getWest(),
+      maxLon: bounds.getEast()
+    });
+  }
+
   useEffect(() => {
-    if (centro) {
-      map.setView(centro, zoom);
+    emitirViewport();
+  }, []);
+
+  useEffect(() => {
+    if (!objetivoMapa) {
+      return;
     }
-  }, [map, centro, zoom]);
+
+    map.flyTo(objetivoMapa.centro, objetivoMapa.zoom ?? 16, {
+      duration: 0.6
+    });
+  }, [map, objetivoMapa]);
+
+  useMapEvents({
+    moveend: emitirViewport,
+    zoomend: emitirViewport
+  });
 
   return null;
 }
 
 function MapaPagina() {
-  const [paradas, setParadas] = useState([]);
+  const [viewportMapa, setViewportMapa] = useState(null);
+  const [objetivoMapa, setObjetivoMapa] = useState(null);
+  const [paradasVisibles, setParadasVisibles] = useState([]);
+  const [paradasCercanas, setParadasCercanas] = useState([]);
+  const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
+  const [textoBusqueda, setTextoBusqueda] = useState('');
   const [paradaSeleccionada, setParadaSeleccionada] = useState(null);
-  const [infoBus, setInfoBus] = useState(null);
-  const [cargandoParadas, setCargandoParadas] = useState(false);
-  const [cargandoInfoBus, setCargandoInfoBus] = useState(false);
-  const [errorParadas, setErrorParadas] = useState('');
-  const [errorInfoBus, setErrorInfoBus] = useState('');
+  const [proximosBuses, setProximosBuses] = useState([]);
+  const [resumenMapa, setResumenMapa] = useState({
+    totalParadas: 0,
+    totalDevueltas: 0,
+    limite: 0,
+    zoomMinimoRecomendado: ZOOM_MINIMO_PARADAS
+  });
+  const [cargandoMapa, setCargandoMapa] = useState(false);
+  const [cargandoBusqueda, setCargandoBusqueda] = useState(false);
+  const [cargandoCercanas, setCargandoCercanas] = useState(false);
+  const [cargandoProximos, setCargandoProximos] = useState(false);
+  const [errorMapa, setErrorMapa] = useState('');
   const [errorUbicacion, setErrorUbicacion] = useState('');
+  const [errorProximos, setErrorProximos] = useState('');
   const [ubicacionUsuario, setUbicacionUsuario] = useState(null);
-  const [centrarMapa, setCentrarMapa] = useState(null);
+  const debounceViewportRef = useRef(null);
+  const debounceBusquedaRef = useRef(null);
+  const busquedaActiva = textoBusqueda.trim();
 
-  const centroInicial = useMemo(() => {
-    return [42.232045931, -8.708603793];
-  }, []);
+  const totalBuses = proximosBuses.length;
+  const zoomActual = viewportMapa?.zoom || 14;
+  const mapaLigero = zoomActual < ZOOM_MINIMO_PARADAS && !paradaSeleccionada;
+  const sinResultadosBusqueda = busquedaActiva.length >= 2 && !cargandoBusqueda && resultadosBusqueda.length === 0;
 
-  useEffect(() => {
-    async function cargarParadas() {
-      setErrorParadas('');
-
-      try {
-        setCargandoParadas(true);
-
-        const respuesta = await obtenerTodasLasParadas();
-
-        const paradasNormalizadas = respuesta
-          .map(normalizarParada)
-          .filter(Boolean);
-
-        setParadas(paradasNormalizadas);
-      } catch (error) {
-        console.error('Error cargando paradas:', error);
-        setErrorParadas('No se pudieron cargar las paradas.');
-      } finally {
-        setCargandoParadas(false);
-      }
-    }
-
-    cargarParadas();
-  }, []);
-
-  async function seleccionarParada(parada) {
+  async function abrirParada(parada, centrar = true) {
     setParadaSeleccionada(parada);
-    setInfoBus(null);
-    setErrorInfoBus('');
-    setCentrarMapa([parada.lat, parada.lon]);
+    setErrorProximos('');
+    setProximosBuses([]);
 
-    if (!parada.id) {
-      setErrorInfoBus('Esta parada no tiene ID de InfoBus.');
-      return;
+    if (centrar) {
+      setObjetivoMapa({
+        centro: [parada.lat, parada.lon],
+        zoom: Math.max(16, zoomActual)
+      });
     }
 
     try {
-      setCargandoInfoBus(true);
+      setCargandoProximos(true);
 
-      const respuesta = await obtenerInfoBusParada(parada.id);
-      const lista = obtenerListaInfoBus(respuesta);
-
-      setInfoBus(lista);
+      const respuesta = await obtenerProximosParada(parada.id);
+      setProximosBuses(respuesta?.proximosBuses || []);
     } catch (error) {
-      console.error('Error cargando InfoBus:', error);
-      setErrorInfoBus('No se pudo cargar InfoBus de esta parada.');
+      setErrorProximos(error.message || 'No se pudieron cargar los proximos buses.');
     } finally {
-      setCargandoInfoBus(false);
+      setCargandoProximos(false);
     }
   }
 
-  function cerrarPanelParada() {
+  function cerrarParada() {
     setParadaSeleccionada(null);
-    setInfoBus(null);
-    setErrorInfoBus('');
+    setProximosBuses([]);
+    setErrorProximos('');
   }
 
   function activarMiUbicacion() {
@@ -260,13 +272,35 @@ function MapaPagina() {
     }
 
     navigator.geolocation.getCurrentPosition(
-      (posicion) => {
-        const lat = posicion.coords.latitude;
-        const lon = posicion.coords.longitude;
-        const punto = [lat, lon];
+      async (posicion) => {
+        const punto = [posicion.coords.latitude, posicion.coords.longitude];
 
         setUbicacionUsuario(punto);
-        setCentrarMapa(punto);
+        setObjetivoMapa({
+          centro: punto,
+          zoom: 16
+        });
+
+        try {
+          setCargandoCercanas(true);
+          const respuesta = await obtenerParadasCercanas({
+            lat: punto[0],
+            lon: punto[1],
+            radioMetros: 450
+          });
+
+          setParadasCercanas(
+            (respuesta || [])
+              .map(normalizarParada)
+              .filter(Boolean)
+              .slice(0, 6)
+          );
+        } catch {
+          setParadasCercanas([]);
+          setErrorUbicacion('No se pudieron cargar las paradas cercanas en este momento.');
+        } finally {
+          setCargandoCercanas(false);
+        }
       },
       () => {
         setErrorUbicacion('No se pudo obtener tu ubicacion. Revisa permisos del navegador.');
@@ -279,22 +313,128 @@ function MapaPagina() {
     );
   }
 
+  useEffect(() => {
+    if (!viewportMapa) {
+      return undefined;
+    }
+
+    if (viewportMapa.zoom < ZOOM_MINIMO_PARADAS) {
+      setParadasVisibles([]);
+      setResumenMapa((actual) => ({
+        ...actual,
+        totalParadas: 0,
+        totalDevueltas: 0
+      }));
+      setErrorMapa('');
+      return undefined;
+    }
+
+    if (debounceViewportRef.current) {
+      window.clearTimeout(debounceViewportRef.current);
+    }
+
+    debounceViewportRef.current = window.setTimeout(async () => {
+      try {
+        setCargandoMapa(true);
+        setErrorMapa('');
+
+        const respuesta = await obtenerParadasParaMapa({
+          minLat: viewportMapa.minLat,
+          maxLat: viewportMapa.maxLat,
+          minLon: viewportMapa.minLon,
+          maxLon: viewportMapa.maxLon,
+          limite: calcularLimitePorZoom(viewportMapa.zoom)
+        });
+
+        setParadasVisibles(
+          (respuesta?.paradas || [])
+            .map(normalizarParada)
+            .filter(Boolean)
+        );
+        setResumenMapa({
+          totalParadas: respuesta?.totalParadas || 0,
+          totalDevueltas: respuesta?.totalDevueltas || 0,
+          limite: respuesta?.limite || 0,
+          zoomMinimoRecomendado: respuesta?.zoomMinimoRecomendado || ZOOM_MINIMO_PARADAS
+        });
+      } catch (error) {
+        setParadasVisibles([]);
+        setErrorMapa(error.message || 'No se pudieron cargar las paradas del mapa.');
+      } finally {
+        setCargandoMapa(false);
+      }
+    }, 220);
+
+    return () => {
+      if (debounceViewportRef.current) {
+        window.clearTimeout(debounceViewportRef.current);
+      }
+    };
+  }, [viewportMapa]);
+
+  useEffect(() => {
+    if (!busquedaActiva || busquedaActiva.length < 2) {
+      setResultadosBusqueda([]);
+      setCargandoBusqueda(false);
+      return undefined;
+    }
+
+    if (debounceBusquedaRef.current) {
+      window.clearTimeout(debounceBusquedaRef.current);
+    }
+
+    debounceBusquedaRef.current = window.setTimeout(async () => {
+      try {
+        setCargandoBusqueda(true);
+
+        const respuesta = await buscarParadasPorNombre(busquedaActiva, 8);
+
+        setResultadosBusqueda(
+          (respuesta || [])
+            .map(normalizarParada)
+            .filter(Boolean)
+        );
+      } catch {
+        setResultadosBusqueda([]);
+      } finally {
+        setCargandoBusqueda(false);
+      }
+    }, 240);
+
+    return () => {
+      if (debounceBusquedaRef.current) {
+        window.clearTimeout(debounceBusquedaRef.current);
+      }
+    };
+  }, [busquedaActiva]);
+
+  const paradasRenderizadas = useMemo(() => {
+    if (!paradaSeleccionada) {
+      return paradasVisibles;
+    }
+
+    return paradasVisibles.filter((parada) => parada.id !== paradaSeleccionada.id);
+  }, [paradaSeleccionada, paradasVisibles]);
+
   return (
     <section className="pagina-mapa">
       <header className="pagina-mapa__cabecera">
         <div className="pagina-mapa__headline">
           <p className="pagina-inicio__mini">Mapa</p>
-          <h1>Explora paradas y tiempos en una vista tipo app.</h1>
+          <div className="cabecera-con-ayuda">
+            <h1>Ver paradas</h1>
+            <BotonAyuda texto="Pulsa una parada para ver proximos buses." />
+          </div>
           <p>
-            Consulta todas las paradas, toca una y abre un panel estilo hoja inferior
-            con los proximos buses en tiempo real.
+            Las paradas se cargan por zona para que el mapa vaya fluido.
           </p>
         </div>
 
         <div className="pagina-mapa__acciones-superiores">
           <div className="pagina-mapa__chips">
-            <span className="chip-app chip-app--activo">InfoBus live</span>
-            <span className="chip-app">Paradas completas</span>
+            <span className="chip-app chip-app--activo">Zona visible</span>
+            <span className="chip-app">Cerca de mi</span>
+            <span className="chip-app">InfoBus</span>
           </div>
 
           <button
@@ -303,10 +443,12 @@ function MapaPagina() {
             onClick={activarMiUbicacion}
           >
             <LocateFixed size={18} />
-            Mi ubicacion
+            Cerca de mi
           </button>
         </div>
       </header>
+
+      <BandaAvisosServicio paradaId={paradaSeleccionada?.id} mostrarVacio={false} />
 
       <section className="pagina-mapa__resumen">
         <article className="pagina-mapa__dato">
@@ -315,19 +457,19 @@ function MapaPagina() {
           </div>
 
           <div>
-            <strong>{paradas.length || '--'}</strong>
-            <span>Paradas cargadas</span>
+            <strong>{resumenMapa.totalParadas}</strong>
+            <span>Paradas en la zona visible</span>
           </div>
         </article>
 
         <article className="pagina-mapa__dato">
           <div className="pagina-mapa__dato-icono">
-            <MapPinned size={16} />
+            <Crosshair size={16} />
           </div>
 
           <div>
-            <strong>{paradaSeleccionada ? paradaSeleccionada.id || 'Activa' : '--'}</strong>
-            <span>Parada seleccionada</span>
+            <strong>{paradasCercanas.length}</strong>
+            <span>Paradas cercanas</span>
           </div>
         </article>
 
@@ -337,39 +479,121 @@ function MapaPagina() {
           </div>
 
           <div>
-            <strong>{infoBus ? infoBus.length : '--'}</strong>
-            <span>Salidas visibles</span>
+            <strong>{totalBuses}</strong>
+            <span>Salidas de la parada activa</span>
           </div>
         </article>
       </section>
 
-      {errorUbicacion && (
-        <p className="mensaje-error">
-          {errorUbicacion}
-        </p>
-      )}
+      <MensajeError>{errorUbicacion}</MensajeError>
 
-      {errorParadas && (
-        <p className="mensaje-error">
-          {errorParadas}
-        </p>
-      )}
+      <MensajeError>{errorMapa}</MensajeError>
 
       <div className="mapa-general">
-        {cargandoParadas && (
-          <div className="mapa-general__estado">
-            Cargando paradas...
+        <OverlayCarga
+          visible={cargandoMapa && !mapaLigero}
+          compacto
+          texto="Cargando paradas..."
+          subtexto="Solo se cargan las visibles para mantener el mapa ligero."
+        />
+
+        <div className="mapa-general__buscador">
+          <div className="mapa-general__campo">
+            <Search size={16} />
+            <input
+              type="text"
+              value={textoBusqueda}
+              onChange={(evento) => setTextoBusqueda(evento.target.value)}
+              placeholder="Buscar parada"
+            />
+            {textoBusqueda && (
+              <button
+                type="button"
+                className="mapa-general__limpiar"
+                onClick={() => {
+                  setTextoBusqueda('');
+                  setResultadosBusqueda([]);
+                }}
+                aria-label="Limpiar busqueda"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+
+          {(cargandoBusqueda || resultadosBusqueda.length > 0 || sinResultadosBusqueda) && (
+            <div className="mapa-general__resultados">
+              {cargandoBusqueda && (
+                <p className="mapa-general__estado-busqueda">
+                  Buscando paradas...
+                </p>
+              )}
+
+              {sinResultadosBusqueda && (
+                <p className="mapa-general__estado-busqueda">
+                  No se han encontrado paradas con ese nombre.
+                </p>
+              )}
+
+              {!cargandoBusqueda && resultadosBusqueda.map((parada) => (
+                <button
+                  key={`busqueda-${parada.id}-${parada.stopId}`}
+                  type="button"
+                  className="mapa-general__resultado"
+                  onClick={() => {
+                    setTextoBusqueda('');
+                    setResultadosBusqueda([]);
+                    abrirParada(parada);
+                  }}
+                >
+                  <strong>{parada.nombre}</strong>
+                  <span>{parada.lineasOriginal || 'Parada urbana'}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {mapaLigero && (
+          <div className="mapa-general__overlay-zoom">
+            Acerca el mapa hasta zoom {resumenMapa.zoomMinimoRecomendado || ZOOM_MINIMO_PARADAS} para mostrar paradas y mantener la navegacion fluida.
           </div>
         )}
 
-        {!cargandoParadas && (
+        {!cargandoMapa && !mapaLigero && (
           <div className="mapa-general__contador">
-            {paradas.length} paradas
+            {resumenMapa.totalDevueltas} visibles
+            {resumenMapa.totalParadas > resumenMapa.totalDevueltas ? ` de ${resumenMapa.totalParadas}` : ''}
+          </div>
+        )}
+
+        {paradasCercanas.length > 0 && !paradaSeleccionada && (
+          <div className="mapa-general__cercanas">
+            <div className="mapa-general__cercanas-cabecera">
+              <strong>Paradas cerca de ti</strong>
+              {cargandoCercanas && <span>Actualizando...</span>}
+            </div>
+
+            <div className="mapa-general__cercanas-lista">
+              {paradasCercanas.map((parada) => (
+                <button
+                  key={`cercana-${parada.id}-${parada.stopId}`}
+                  type="button"
+                  className="mapa-general__cercana"
+                  onClick={() => abrirParada(parada)}
+                >
+                  <strong>{parada.nombre}</strong>
+                  <span>
+                    {parada.distanciaMetros ? `${Math.round(parada.distanciaMetros)} m` : 'Parada cercana'}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
         <MapContainer
-          center={centroInicial}
+          center={CENTRO_VIGO}
           zoom={14}
           scrollWheelZoom
           className="mapa-general__leaflet"
@@ -379,131 +603,49 @@ function MapaPagina() {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          {centrarMapa && (
-            <AjustarCentro
-              centro={centrarMapa}
-              zoom={16}
-            />
-          )}
+          <GestorMapa
+            objetivoMapa={objetivoMapa}
+            onCambiarViewport={setViewportMapa}
+          />
 
           {ubicacionUsuario && (
             <Marker
               position={ubicacionUsuario}
-              icon={crearIconoUsuario()}
-            >
-              <Popup>
-                <div className="popup-parada">
-                  <strong>Tu ubicacion</strong>
-                  <span>Ubicacion actual del dispositivo</span>
-                </div>
-              </Popup>
-            </Marker>
+              icon={ICONO_USUARIO}
+            />
           )}
 
-          {paradas.map((parada) => {
-            const seleccionada = paradaSeleccionada?.id === parada.id;
+          {paradasRenderizadas.map((parada) => (
+            <Marker
+              key={`${parada.id}-${parada.stopId}-${parada.lat}-${parada.lon}`}
+              position={[parada.lat, parada.lon]}
+              icon={ICONO_PARADA}
+              eventHandlers={{
+                click: () => abrirParada(parada, false)
+              }}
+            />
+          ))}
 
-            return (
-              <Marker
-                key={`${parada.id}-${parada.stopId}-${parada.lat}-${parada.lon}`}
-                position={[parada.lat, parada.lon]}
-                icon={seleccionada ? crearIconoParadaSeleccionada() : crearIconoParadaMapa()}
-                eventHandlers={{
-                  click: () => seleccionarParada(parada)
-                }}
-              >
-                <Popup>
-                  <div className="popup-parada">
-                    <strong>{parada.nombre}</strong>
-                    <span>ID InfoBus: {parada.id || 'Sin id'}</span>
-                    <span>GTFS stop_id: {parada.stopId || 'Sin stop_id'}</span>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
+          {paradaSeleccionada && (
+            <Marker
+              position={[paradaSeleccionada.lat, paradaSeleccionada.lon]}
+              icon={ICONO_PARADA_SELECCIONADA}
+              eventHandlers={{
+                click: () => abrirParada(paradaSeleccionada, false)
+              }}
+            />
+          )}
         </MapContainer>
 
         {paradaSeleccionada && (
-          <aside className="panel-infobus">
-            <button
-              type="button"
-              className="panel-infobus__cerrar"
-              onClick={cerrarPanelParada}
-              aria-label="Cerrar panel"
-            >
-              <X size={18} />
-            </button>
-
-            <div className="panel-infobus__cabecera">
-              <div className="panel-infobus__icono">
-                <BusFront size={22} />
-              </div>
-
-              <div>
-                <p>Parada seleccionada</p>
-                <h2>{paradaSeleccionada.nombre}</h2>
-                <span>ID InfoBus: {paradaSeleccionada.id}</span>
-              </div>
-            </div>
-
-            <div className="panel-infobus__acciones">
-              <button
-                type="button"
-                onClick={() => seleccionarParada(paradaSeleccionada)}
-                disabled={cargandoInfoBus}
-              >
-                <Navigation size={16} />
-                Actualizar
-              </button>
-            </div>
-
-            {cargandoInfoBus && (
-              <p className="panel-infobus__mensaje">
-                Cargando proximos buses...
-              </p>
-            )}
-
-            {errorInfoBus && (
-              <p className="panel-infobus__error">
-                {errorInfoBus}
-              </p>
-            )}
-
-            {infoBus && infoBus.length === 0 && (
-              <p className="panel-infobus__vacio">
-                No hay proximos buses disponibles ahora.
-              </p>
-            )}
-
-            {infoBus && infoBus.length > 0 && (
-              <div className="panel-infobus__lista">
-                {infoBus.map((bus, indice) => (
-                  <article
-                    className="panel-infobus__item"
-                    key={`${obtenerTextoLinea(bus)}-${obtenerTextoTiempo(bus)}-${indice}`}
-                  >
-                    <span className="panel-infobus__linea">
-                      {obtenerTextoLinea(bus)}
-                    </span>
-
-                    <div className="panel-infobus__datos">
-                      <strong>{obtenerTextoRuta(bus)}</strong>
-
-                      <small>
-                        <Clock size={14} />
-                        Proximo bus
-                      </small>
-                    </div>
-
-                    <span className={obtenerClaseMinutos(bus)}>
-                      {obtenerTextoTiempo(bus)}
-                    </span>
-                  </article>
-                ))}
-              </div>
-            )}
-          </aside>
+          <PanelInfoBus
+            parada={paradaSeleccionada}
+            buses={proximosBuses}
+            cargando={cargandoProximos}
+            error={errorProximos}
+            onActualizar={() => abrirParada(paradaSeleccionada, false)}
+            onCerrar={cerrarParada}
+          />
         )}
       </div>
     </section>
